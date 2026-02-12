@@ -95,16 +95,17 @@
         }
 
         .dropdown-content {
-            display: none;
             position: absolute;
             right: 0;
-            top: 100%;
-            padding-top: 15px;
-            /* The Bridge */
-            min-width: 240px;
+            top: calc(100% - 10px);
+            min-width: 260px;
+            padding-top: 20px;
             z-index: 1000;
-            transform-origin: top right;
-            animation: dropdownFade 0.2s ease-out;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            pointer-events: none;
         }
 
         /* Invisible bridge to maintain hover */
@@ -120,26 +121,17 @@
         .dropdown-inner {
             background: white;
             border-radius: 1.5rem;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(0, 0, 0, 0.08);
             overflow: hidden;
             position: relative;
         }
 
         .profile-dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        @keyframes dropdownFade {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(-5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
         }
     </style>
 </head>
