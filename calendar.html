@@ -92,6 +92,47 @@
             background: #E2E8F0;
             border-radius: 10px;
         }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+
+        .profile-dropdown {
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 1rem;
+            min-width: 220px;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            z-index: 50;
+            transform-origin: top right;
+            animation: dropdownFade 0.2s ease-out;
+        }
+
+        .profile-dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        @keyframes dropdownFade {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -172,16 +213,31 @@
                         New Event
                     </button>
                     <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
-                        <div class="flex items-center gap-4 group cursor-pointer" onclick="SyncService.logout()">
-                            <div class="text-right">
-                                <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
-                                    Johnson</p>
-                                <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Temporal
-                                    Lead</p>
+                        <div class="profile-dropdown">
+                            <div class="flex items-center gap-4 ml-4 group cursor-pointer">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                        Johnson</p>
+                                    <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                        Temporal Lead</p>
+                                </div>
+                                <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                    class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                    alt="User">
                             </div>
-                            <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
-                                class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
-                                alt="User">
+                            <div class="dropdown-content">
+                                <a href="settings.html"
+                                    class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
+                                    <span class="material-icons-round text-lg">settings</span>
+                                    Settings
+                                </a>
+                                <div class="h-px bg-slate-50 mx-4"></div>
+                                <button onclick="SyncService.logout()"
+                                    class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
+                                    <span class="material-icons-round text-lg">logout</span>
+                                    Logout
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
