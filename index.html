@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow | Modern Intelligence Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-hover: #D05A21;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(233, 106, 44, 0.05);
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at top right, rgba(233, 106, 44, 0.08), transparent),
+                radial-gradient(circle at bottom left, rgba(233, 106, 44, 0.05), transparent);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            box-shadow: 0 10px 25px -5px rgba(233, 106, 44, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(233, 106, 44, 0.4);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(233, 106, 44, 0.2);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] hero-gradient min-h-screen text-slate-900 selection:bg-orange-100">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-header">
+        <div class="max-w-7xl mx-auto px-10 h-24 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span class="text-2xl font-bold font-display tracking-tight text-slate-900">TaskFlow</span>
+            </div>
+
+            <div class="hidden md:flex items-center gap-12">
+                <a href="#features"
+                    class="text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-orange-600 transition-colors">Features</a>
+                <a href="#pricing"
+                    class="text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-orange-600 transition-colors">Pricing</a>
+                <a href="#about"
+                    class="text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-orange-600 transition-colors">About</a>
+            </div>
+
+            <div class="flex items-center gap-8">
+                <a href="login.html"
+                    class="hidden sm:block text-sm font-bold uppercase tracking-widest text-slate-900 hover:text-orange-600 transition-colors">Login</a>
+                <a href="signup.html"
+                    class="btn-primary text-white px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-widest">Start
+                    Trial</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="pt-56 pb-32 px-10">
+        <div class="max-w-7xl mx-auto flex flex-col items-center text-center">
+            <div
+                class="inline-flex items-center gap-3 bg-orange-50 border border-orange-100 px-5 py-2.5 rounded-full mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <span class="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-orange-700">Neural Sync Engine v2.4
+                    Active</span>
+            </div>
+
+            <h1
+                class="text-7xl md:text-8xl font-black mb-10 leading-[1] tracking-tight font-display animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                The future of work, <br>
+                <span class="text-[#E96A2C]">orchestrated.</span>
+            </h1>
+
+            <p
+                class="text-xl md:text-2xl text-slate-500 max-w-3xl mb-16 leading-relaxed font-medium animate-in fade-in duration-1000 delay-300">
+                Elevate your team's velocity with a high-fidelity interface designed for
+                radical transparency and crystal-clear execution.
+            </p>
+
+            <div
+                class="flex flex-col sm:flex-row items-center gap-8 mb-24 w-full justify-center animate-in fade-in duration-1000 delay-500">
+                <a href="signup.html"
+                    class="btn-primary text-white px-12 py-5 rounded-2xl font-bold text-sm uppercase tracking-widest w-full sm:w-auto text-center shadow-2xl">Initialize
+                    Workspace</a>
+                <a href="#demo"
+                    class="bg-white border border-slate-200 px-12 py-5 rounded-2xl font-bold text-sm uppercase tracking-widest hover:border-orange-500 hover:text-orange-600 transition-all w-full sm:w-auto text-center">Request
+                    Briefing</a>
+            </div>
+
+            <!-- Dashboard Mockup -->
+            <div class="relative w-full max-w-6xl group animate-in fade-in zoom-in-95 duration-1000 delay-700">
+                <div
+                    class="absolute inset-0 bg-orange-500/10 blur-[120px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity">
+                </div>
+                <div
+                    class="relative bg-white/40 backdrop-blur-3xl rounded-[3rem] border-[12px] border-white shadow-2xl overflow-hidden aspect-[16/9] flex items-center justify-center p-1">
+                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=2426"
+                        class="w-full h-full object-cover rounded-[2.5rem] opacity-90 grayscale-[0.2]"
+                        alt="Dashboard Mockup">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-slate-900/40 to-transparent"></div>
+                    <div class="absolute bottom-12 left-12 p-8 glass-card rounded-[2rem] max-w-sm text-left">
+                        <div
+                            class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white mb-4">
+                            <span class="material-icons-round">analytics</span>
+                        </div>
+                        <p class="text-white font-bold text-lg mb-2">Real-time Intelligence</p>
+                        <p class="text-white/70 text-sm font-medium">Track your initiative velocity with precision
+                            metrics and automated sync.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="py-40 px-10">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-24">
+                <h2 class="text-5xl md:text-6xl font-black mb-6 font-display tracking-tight text-slate-900">Built for
+                    <span class="text-[#E96A2C]">Extreme Efficiency.</span></h2>
+                <p class="text-lg text-slate-500 font-medium max-w-2xl mx-auto">Sophisticated tooling designed for the
+                    high-performance operative workflow.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <!-- Kanban -->
+                <div class="glass-card p-12 rounded-[3rem]">
+                    <div
+                        class="w-20 h-20 bg-orange-50 rounded-[1.5rem] flex items-center justify-center text-[#E96A2C] mb-10 border border-orange-100">
+                        <span class="material-icons-round text-4xl">view_kanban</span>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-6 tracking-tight font-display">Neural Board</h3>
+                    <p class="text-slate-500 font-medium leading-relaxed mb-10">High-fidelity drag-and-drop
+                        orchestration that keeps initiative flow transparent and fluid.</p>
+                    <a href="#"
+                        class="text-[#E96A2C] font-bold uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:gap-5">
+                        Deep Dive <span class="material-icons-round text-sm">arrow_forward</span>
+                    </a>
+                </div>
+
+                <!-- Calendar -->
+                <div class="glass-card p-12 rounded-[3rem]">
+                    <div
+                        class="w-20 h-20 bg-blue-50 rounded-[1.5rem] flex items-center justify-center text-blue-600 mb-10 border border-blue-100">
+                        <span class="material-icons-round text-4xl">calendar_month</span>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-6 tracking-tight font-display">Temporal Grid</h3>
+                    <p class="text-slate-500 font-medium leading-relaxed mb-10">Master your timeline with precision
+                        scheduling and automated priority synchronization.</p>
+                    <a href="#"
+                        class="text-blue-600 font-bold uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:gap-5">
+                        Deep Dive <span class="material-icons-round text-sm">arrow_forward</span>
+                    </a>
+                </div>
+
+                <!-- Analytics -->
+                <div class="glass-card p-12 rounded-[3rem]">
+                    <div
+                        class="w-20 h-20 bg-emerald-50 rounded-[1.5rem] flex items-center justify-center text-emerald-600 mb-10 border border-emerald-100">
+                        <span class="material-icons-round text-4xl">insights</span>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-6 tracking-tight font-display">Core Metrics</h3>
+                    <p class="text-slate-500 font-medium leading-relaxed mb-10">Visualize project performance with
+                        advanced charts and intelligent data modeling.</p>
+                    <a href="#"
+                        class="text-emerald-600 font-bold uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:gap-5">
+                        Deep Dive <span class="material-icons-round text-sm">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-32 px-10 border-t border-slate-100">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-20">
+            <div class="max-w-xs">
+                <div class="flex items-center gap-4 mb-8">
+                    <div
+                        class="w-12 h-12 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg">
+                        <span class="material-icons-round">bolt</span>
+                    </div>
+                    <span class="text-2xl font-bold font-display tracking-tight">TaskFlow</span>
+                </div>
+                <p class="text-slate-500 font-medium leading-relaxed">The pinnacle of engineering intelligence and
+                    orchestration.</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-16 md:gap-32">
+                <div class="space-y-6">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Platform</p>
+                    <ul class="space-y-4">
+                        <li><a href="#"
+                                class="text-sm font-bold text-slate-600 hover:text-orange-600 transition-colors">Neural
+                                Board</a></li>
+                        <li><a href="#"
+                                class="text-sm font-bold text-slate-600 hover:text-orange-600 transition-colors">Temporal
+                                Grid</a></li>
+                        <li><a href="#"
+                                class="text-sm font-bold text-slate-600 hover:text-orange-600 transition-colors">Global
+                                Intel</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-6">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Company</p>
+                    <ul class="space-y-4">
+                        <li><a href="#"
+                                class="text-sm font-bold text-slate-600 hover:text-orange-600 transition-colors">Genesis</a>
+                        </li>
+                        <li><a href="#"
+                                class="text-sm font-bold text-slate-600 hover:text-orange-600 transition-colors">Security</a>
+                        </li>
+                        <li><a href="#"
+                                class="text-sm font-bold text-slate-600 hover:text-orange-600 transition-colors">Artifacts</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="space-y-6 col-span-2 md:col-span-1">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Newsletter</p>
+                    <div class="flex gap-2">
+                        <input type="email" placeholder="Pulse link..."
+                            class="bg-slate-50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-orange-500/10 transition-all w-full">
+                        <button class="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-all">
+                            <span class="material-icons-round text-sm text-[16px]">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto mt-32 pt-10 border-t border-slate-50 flex justify-between items-center">
+            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">&copy; 2026 TASKFLOW ARCHITECTURE. ALL
+                RIGHTS RESERVED.</p>
+            <div class="flex gap-8">
+                <a href="#" class="text-slate-400 hover:text-orange-600 transition-colors"><span
+                        class="material-icons-round text-lg">public</span></a>
+                <a href="#" class="text-slate-400 hover:text-orange-600 transition-colors"><span
+                        class="material-icons-round text-lg">terminal</span></a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

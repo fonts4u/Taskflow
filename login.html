@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | TaskFlow Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-hover: #D05A21;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .premium-glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(233, 106, 44, 0.05);
+        }
+
+        .btn-premium {
+            background: var(--primary);
+            box-shadow: 0 10px 25px -5px rgba(233, 106, 44, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(233, 106, 44, 0.4);
+        }
+
+        .input-premium:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(233, 106, 44, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] flex min-h-screen">
+
+    <!-- Left Side: Visual/Value Prop -->
+    <div class="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden items-center justify-center p-20">
+        <div class="absolute inset-0 opacity-40">
+            <div
+                class="absolute top-0 -left-20 w-[500px] h-[500px] bg-orange-500 rounded-full blur-[150px] mix-blend-screen opacity-20">
+            </div>
+            <div
+                class="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-amber-500 rounded-full blur-[150px] mix-blend-screen opacity-20">
+            </div>
+        </div>
+
+        <div class="relative z-10 max-w-lg">
+            <div
+                class="mb-16 inline-flex items-center gap-4 bg-white/5 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span class="text-white text-2xl font-bold font-display tracking-tight">TaskFlow</span>
+            </div>
+
+            <h2 class="text-6xl font-black text-white mb-10 leading-[1.1] tracking-tight font-display">
+                Drive your <br>
+                <span class="text-[#E96A2C]">velocity</span> higher.
+            </h2>
+            <p class="text-slate-400 text-xl mb-16 leading-relaxed font-medium">
+                The most sophisticated intelligence ledger for high-performance engineering teams.
+            </p>
+
+            <div class="flex items-center gap-8">
+                <div class="flex -space-x-4">
+                    <img src="https://ui-avatars.com/api/?name=A+J&background=E96A2C&color=fff"
+                        class="w-14 h-14 rounded-2xl border-4 border-slate-900 shadow-2xl" alt="">
+                    <img src="https://ui-avatars.com/api/?name=S+K&background=334155&color=fff"
+                        class="w-14 h-14 rounded-2xl border-4 border-slate-900 shadow-2xl" alt="">
+                    <img src="https://ui-avatars.com/api/?name=T+M&background=E96A2C&color=fff"
+                        class="w-14 h-14 rounded-2xl border-4 border-slate-900 shadow-2xl" alt="">
+                </div>
+                <div>
+                    <p class="text-white font-bold text-lg leading-tight">12.4k+</p>
+                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Active Nodes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Login Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-12 bg-white relative">
+        <div class="w-full max-w-md">
+            <!-- Mobile Logo -->
+            <div class="lg:hidden flex items-center gap-3 mb-16">
+                <div class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span class="text-2xl font-bold font-display tracking-tight text-slate-900">TaskFlow</span>
+            </div>
+
+            <h1 class="text-5xl font-black text-slate-900 mb-4 tracking-tight font-display">Authenticate</h1>
+            <p class="text-slate-500 font-medium mb-12 text-lg">Access your intelligence dashboard.</p>
+
+            <form action="dashboard.html" class="space-y-8">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">Neural
+                        Identifier</label>
+                    <input type="email" placeholder="name@company.com"
+                        class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg input-premium"
+                        required>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-3">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Secret
+                            Key</label>
+                        <a href="#"
+                            class="text-[10px] font-bold text-[#E96A2C] uppercase tracking-widest hover:underline">Recovery</a>
+                    </div>
+                    <input type="password" placeholder="••••••••"
+                        class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg input-premium"
+                        required>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <input type="checkbox" id="remember"
+                        class="w-5 h-5 rounded-lg text-[#E96A2C] focus:ring-[#E96A2C] border-slate-200">
+                    <label for="remember" class="text-sm font-bold text-slate-600">Preserve session</label>
+                </div>
+
+                <button type="submit"
+                    class="w-full btn-premium text-white py-6 rounded-2xl font-black text-lg tracking-widest uppercase active:scale-[0.98] transition-all">
+                    Initiate Handshake
+                </button>
+            </form>
+
+            <div class="relative my-12 text-center">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-100"></div>
+                </div>
+                <span
+                    class="relative bg-white px-6 text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">External
+                    Sync</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <button id="googleLogin"
+                    class="flex items-center justify-center gap-3 border border-slate-100 py-4 rounded-2xl hover:bg-slate-50 transition-all font-bold text-xs uppercase tracking-widest">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#EA4335"
+                            d="M12.48 10.92v3.28h7.84c-.24 1.84-.91 3.22-1.92 4.28-1.2 1.2-3.07 2.48-6.11 2.48-4.85 0-8.64-3.92-8.64-8.77s3.79-8.77 8.64-8.77c2.98 0 5.17 1.15 6.53 2.48l2.31-2.31C18.98 1.18 16.19 0 12.48 0 5.86 0 .3 5.39.3 12s5.56 12 12.18 12c3.56 0 6.19-1.18 8.1-3.11 2.1-2.11 2.76-5.07 2.76-7.44 0-.71-.05-1.39-.16-2.03h-10.7z" />
+                    </svg>
+                    Google
+                </button>
+                <button id="githubLogin"
+                    class="flex items-center justify-center gap-3 border border-slate-100 py-4 rounded-2xl hover:bg-slate-50 transition-all font-bold text-xs uppercase tracking-widest">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="currentColor"
+                            d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                    </svg>
+                    Github
+                </button>
+            </div>
+
+            <p class="text-center mt-12 text-sm text-slate-500 font-medium">New operative? <a href="signup.html"
+                    class="text-[#E96A2C] font-black hover:underline uppercase tracking-widest text-xs ml-2">Secure
+                    Trial</a></p>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-10 right-10 z-[100] flex flex-col gap-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex bg-white items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[320px] transition-all duration-500 transform translate-y-20 opacity-0`;
+
+            const colorClass = isError ? 'text-rose-500' : 'text-[#E96A2C]';
+            const icon = isError ? 'error_outline' : 'verified';
+
+            toast.innerHTML = `
+                <div class="w-10 h-10 ${isError ? 'bg-rose-50' : 'bg-orange-50'} rounded-xl flex items-center justify-center ${colorClass} shrink-0">
+                    <span class="material-icons-round text-xl">${icon}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 block text-sm">Security Pulse</span>
+                    <span class="text-xs text-slate-500">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        document.querySelector('form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+
+            const email = e.target.querySelectorAll('input')[0].value;
+            const password = e.target.querySelectorAll('input')[1].value;
+
+            btn.innerText = 'Synchronizing...';
+            btn.disabled = true;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
+
+                if (error) throw error;
+
+                showToast('Authentication successful. Welcome to Control.');
+                setTimeout(() => window.location.href = 'dashboard.html', 1500);
+
+            } catch (err) {
+                showToast(err.message || 'Handshake failed', true);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('googleLogin').addEventListener('click', async () => {
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + '/dashboard.html'
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                showToast(err.message || 'Google sync failed', true);
+            }
+        });
+        document.getElementById('githubLogin').addEventListener('click', async () => {
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'github',
+                    options: {
+                        redirectTo: window.location.origin + '/dashboard.html'
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                showToast(err.message || 'Github sync failed', true);
+            }
+        });
+    </script>
+</body>
+
+</html>

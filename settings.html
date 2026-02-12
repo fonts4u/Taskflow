@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Systems Configuration | TaskFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-soft: rgba(233, 106, 44, 0.1);
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            box-shadow: inset -4px 0 0 var(--primary);
+        }
+
+        .settings-card {
+            background: white;
+            border-radius: 3rem;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.04);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-weight: 800;
+            box-shadow: inset 4px 0 0 var(--primary);
+        }
+
+        .premium-input {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .premium-input:focus {
+            background: white;
+            box-shadow: 0 0 0 4px rgba(233, 106, 44, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] text-[#0F172A] overflow-hidden">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-glass flex flex-col z-20">
+            <div class="p-8 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span
+                    class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C]">Pro</span>
+            </div>
+            <nav class="flex-1 mt-6 px-4 space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="projects.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">folder</span>
+                    Projects
+                </a>
+                <a href="kanban.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">view_kanban</span>
+                    Kanban
+                </a>
+                <a href="calendar.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span
+                        class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">calendar_month</span>
+                    Calendar
+                </a>
+                <a href="analytics.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">bar_chart</span>
+                    Analytics
+                </a>
+                <a href="settings.html"
+                    class="nav-active flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all group">
+                    <span class="material-icons-round text-[20px]">settings</span>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#FAFAFA]">
+            <!-- Header -->
+            <header class="h-20 header-glass flex items-center justify-between px-10 z-10 shrink-0">
+                <div class="flex items-center gap-4">
+                    <span class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Context</span>
+                    <span class="text-slate-300">/</span>
+                    <span
+                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Account
+                        Preferences</span>
+                </div>
+                <div class="flex items-center gap-8">
+                    <button id="saveProfileBtn" onclick="handleSaveProfile()"
+                        class="bg-[#E96A2C] text-white px-8 py-3.5 rounded-2xl font-bold text-xs shadow-2xl shadow-orange-500/20 active:scale-95 transition-all uppercase tracking-widest">Commit
+                        Changes</button>
+                    <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
+                        <div class="flex items-center gap-4 group cursor-pointer" onclick="SyncService.logout()">
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                    Johnson</p>
+                                <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Security
+                                    Lead</p>
+                            </div>
+                            <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                alt="User">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Settings Content -->
+            <div class="flex-1 p-10 flex gap-16 overflow-hidden">
+                <!-- Tabs -->
+                <div class="w-72 flex flex-col gap-3 shrink-0">
+                    <button class="tab-active text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
+                        <span class="material-icons-round text-lg">person</span>
+                        Profile Intelligence
+                    </button>
+                    <button
+                        class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
+                        <span class="material-icons-round text-lg">group</span>
+                        Squad Management
+                    </button>
+                    <button
+                        class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
+                        <span class="material-icons-round text-lg">notifications</span>
+                        Signal Protocols
+                    </button>
+                    <button
+                        class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
+                        <span class="material-icons-round text-lg">shield</span>
+                        Encryption Path
+                    </button>
+                    <button
+                        class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
+                        <span class="material-icons-round text-lg">credit_card</span>
+                        Resource Allocation
+                    </button>
+                    <div class="mt-8 pt-8 border-t border-slate-100">
+                        <button id="logoutBtn"
+                            class="text-rose-500 font-bold hover:bg-rose-50 text-left px-6 py-4 rounded-2xl transition-all w-full flex items-center gap-3">
+                            <span class="material-icons-round text-lg">logout</span>
+                            Terminate Session
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Section -->
+                <div class="flex-1 overflow-y-auto pr-6 space-y-12 custom-scrollbar">
+                    <div class="settings-card p-12">
+                        <div class="flex items-center justify-between mb-12">
+                            <div>
+                                <h2 class="text-3xl font-bold tracking-tight text-slate-900 font-display">System
+                                    Identity</h2>
+                                <p class="text-slate-400 text-sm mt-1">Manage how you appear across the workspace.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-12 mb-16">
+                            <div class="relative group">
+                                <img id="profilePreview"
+                                    src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff&size=128"
+                                    class="w-40 h-40 rounded-[2.5rem] shadow-2xl transition-all group-hover:scale-105"
+                                    alt="">
+                                <button onclick="document.getElementById('avatarInput').click()"
+                                    class="absolute -bottom-3 -right-3 bg-white p-3 rounded-2xl shadow-2xl border border-slate-100 hover:bg-orange-500 hover:text-white transition-all text-orange-500">
+                                    <span class="material-icons-round text-xl">photo_camera</span>
+                                </button>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Biometric
+                                    Image</p>
+                                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Identity marker used for
+                                    collaboration. Supported formats: JPG, PNG, GIF. Max limit 800KB.</p>
+                                <div class="flex gap-4">
+                                    <input type="file" id="avatarInput" class="hidden" accept="image/*"
+                                        onchange="handleImageUpload(event)">
+                                    <button onclick="document.getElementById('avatarInput').click()"
+                                        class="bg-slate-900 text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95">Synchronize
+                                        New</button>
+                                    <button onclick="handleRemoveAvatar()"
+                                        class="text-slate-400 font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:text-rose-500 transition-all border border-slate-100 hover:border-rose-100 hover:bg-rose-50">Reset
+                                        Legacy</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-10">
+                            <div class="space-y-3">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Given
+                                    Name</label>
+                                <input type="text" id="firstName" placeholder="Alex"
+                                    class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg premium-input">
+                            </div>
+                            <div class="space-y-3">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Family
+                                    Name</label>
+                                <input type="text" id="lastName" placeholder="Johnson"
+                                    class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg premium-input">
+                            </div>
+                            <div class="col-span-2 space-y-3">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Digital
+                                    Coordinates (Email)</label>
+                                <input type="email" id="email" readonly
+                                    class="w-full px-6 py-5 rounded-2xl border-none bg-slate-100 text-slate-400 cursor-not-allowed outline-none transition-all font-bold text-lg">
+                            </div>
+                            <div class="col-span-2 space-y-3">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Operational
+                                    Role</label>
+                                <input type="text" id="jobTitle" placeholder="Quantum Architect"
+                                    class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg premium-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card p-12">
+                        <div class="flex items-center justify-between mb-10">
+                            <div>
+                                <h2 class="text-2xl font-bold tracking-tight text-slate-900 font-display text-lg">
+                                    Protocol Security</h2>
+                                <p class="text-slate-400 text-xs mt-1">Fortify your digital presence.</p>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div
+                                class="flex items-center justify-between p-8 bg-slate-50/50 rounded-3xl border border-slate-100/50 group hover:bg-white hover:shadow-xl hover:shadow-slate-200/20 transition-all duration-300">
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 transition-colors group-hover:text-emerald-500">
+                                        <span class="material-icons-round text-2xl">verified_user</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900">Dual-Phase Authentication</p>
+                                        <p class="text-xs text-slate-500 mt-1">Enhanced biometrics and SMS verification
+                                            protocols.</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="w-16 h-8 bg-slate-200 rounded-full flex items-center px-1.5 cursor-pointer transition-all hover:bg-slate-300">
+                                    <div class="w-5 h-5 bg-white rounded-full shadow-lg"></div>
+                                </div>
+                            </div>
+                            <div
+                                class="flex items-center justify-between p-8 bg-slate-50/50 rounded-3xl border border-slate-100/50 group hover:bg-white hover:shadow-xl hover:shadow-slate-200/20 transition-all duration-300">
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 transition-colors group-hover:text-orange-500">
+                                        <span class="material-icons-round text-2xl">key</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900">Access Key Cipher</p>
+                                        <p class="text-xs text-slate-500 mt-1">Last rotated 120 cycles ago.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    class="bg-white px-8 py-3 rounded-xl shadow-sm border border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all active:scale-95">Rotate</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex bg-white items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[320px] transition-all duration-500 transform translate-y-20 opacity-0`;
+
+            const colorClass = isError ? 'text-rose-500' : 'text-emerald-500';
+            const icon = isError ? 'report_problem' : 'verified';
+
+            toast.innerHTML = `
+                <div class="w-10 h-10 ${isError ? 'bg-rose-50' : 'bg-emerald-50'} rounded-xl flex items-center justify-center ${colorClass} shrink-0">
+                    <span class="material-icons-round text-xl">${icon}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 block text-sm">System Pulse</span>
+                    <span class="text-xs text-slate-500">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        async function loadProfile() {
+            const profile = await SyncService.getProfile();
+            const { data: { user } } = await window.supabase.auth.getUser();
+
+            document.getElementById('firstName').value = profile.first_name || '';
+            document.getElementById('lastName').value = profile.last_name || '';
+            document.getElementById('jobTitle').value = profile.job_title || '';
+            document.getElementById('email').value = user?.email || 'local@test.com';
+
+            if (profile.avatar_url) {
+                document.getElementById('profilePreview').src = profile.avatar_url;
+            } else {
+                updateAvatarPreview();
+            }
+        }
+
+        function updateAvatarPreview() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const initials = `${firstName} ${lastName}`.trim() || 'User';
+            const preview = document.getElementById('profilePreview');
+
+            if (!preview.src || preview.src.includes('ui-avatars.com')) {
+                preview.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=E96A2C&color=fff&size=256&bold=true`;
+            }
+        }
+
+        document.getElementById('firstName').oninput = updateAvatarPreview;
+        document.getElementById('lastName').oninput = updateAvatarPreview;
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 800 * 1024) {
+                showToast('Intelligence packet too large (800KB Limit)', true);
+                return;
+            }
+
+            const preview = document.getElementById('profilePreview');
+            const originalSrc = preview.src;
+            preview.style.opacity = '0.5';
+
+            const publicUrl = await SyncService.uploadAvatar(file);
+            if (publicUrl) {
+                preview.src = publicUrl;
+                preview.style.opacity = '1';
+                showToast('Biometric data uploaded. Commit changes to save.');
+            } else {
+                preview.src = originalSrc;
+                preview.style.opacity = '1';
+                showToast('Upload handshake failed.', true);
+            }
+        }
+
+        async function handleRemoveAvatar() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const initials = `${firstName} ${lastName}`.trim() || 'User';
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=E96A2C&color=fff&size=256`;
+
+            document.getElementById('profilePreview').src = defaultAvatar;
+            showToast('Identity marker reset.');
+        }
+
+        async function handleSaveProfile() {
+            const btn = document.getElementById('saveProfileBtn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Synchronizing...';
+            btn.disabled = true;
+
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const currentAvatar = document.getElementById('profilePreview').src;
+
+            const profile = {
+                first_name: firstName,
+                last_name: lastName,
+                job_title: document.getElementById('jobTitle').value,
+                full_name: `${firstName} ${lastName}`.trim(),
+                avatar_url: currentAvatar
+            };
+
+            await SyncService.saveProfile(profile);
+            await SyncService.updateProfileUI();
+
+            showToast('System configuration synchronized.');
+
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.onclick = () => SyncService.logout();
+            }
+            await loadProfile();
+        });
+    </script>
+</body>
+
+</html>
+
+</html>

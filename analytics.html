@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Analytics | TaskFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-soft: rgba(233, 106, 44, 0.1);
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            box-shadow: inset -4px 0 0 var(--primary);
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 4rem;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.04);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 0.08);
+            border-color: rgba(233, 106, 44, 0.1);
+        }
+
+        .stat-bar {
+            height: 12px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] text-[#0F172A] overflow-hidden">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-glass flex flex-col z-20">
+            <div class="p-8 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span
+                    class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C]">Pro</span>
+            </div>
+            <nav class="flex-1 mt-6 px-4 space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="projects.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">folder</span>
+                    Projects
+                </a>
+                <a href="kanban.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">view_kanban</span>
+                    Kanban
+                </a>
+                <a href="calendar.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span
+                        class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">calendar_month</span>
+                    Calendar
+                </a>
+                <a href="analytics.html"
+                    class="nav-active flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all group">
+                    <span class="material-icons-round text-[20px]">bar_chart</span>
+                    Analytics
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">settings</span>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#FAFAFA]">
+            <header class="h-20 header-glass flex items-center justify-between px-10 z-10 shrink-0">
+                <div class="flex items-center gap-4">
+                    <span class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Context</span>
+                    <span class="text-slate-300">/</span>
+                    <span
+                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Intelligence
+                        Insights</span>
+                </div>
+                <div class="flex items-center gap-8">
+                    <button onclick="window.print()"
+                        class="flex items-center gap-2 bg-white px-6 py-3 rounded-2xl text-xs font-bold text-slate-600 shadow-sm border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 uppercase tracking-widest">
+                        <span class="material-icons-round text-lg">picture_as_pdf</span>
+                        Export Intel
+                    </button>
+                    <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
+                        <div class="flex items-center gap-4 group cursor-pointer" onclick="SyncService.logout()">
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                    Johnson</p>
+                                <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Systems
+                                    Lead</p>
+                            </div>
+                            <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                alt="User">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                <div class="max-w-7xl mx-auto space-y-12">
+                    <div class="flex justify-between items-end mb-16">
+                        <div>
+                            <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-4">Strategic
+                                Intelligence Overview</h1>
+                            <p class="text-slate-500 font-medium tracking-tight">Real-time performance throughput and
+                                initiative resource utilization.</p>
+                        </div>
+                    </div>
+
+                    <!-- Overlays -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                        <div class="chart-card p-12 flex flex-col justify-between relative overflow-hidden group">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-orange-500/10 transition-colors">
+                            </div>
+                            <div class="flex items-center gap-4 mb-10">
+                                <span class="material-icons-round text-slate-300">speed</span>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Velocity
+                                    Throughput</p>
+                            </div>
+                            <div>
+                                <h3 class="text-6xl font-extrabold text-slate-900 tracking-tighter mb-4"
+                                    id="totalTasks">0</h3>
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+                                    <p class="text-emerald-500 text-[10px] font-bold uppercase tracking-widest">Optimal
+                                        Node Flow</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-card p-12 flex flex-col justify-between relative overflow-hidden group">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-blue-500/10 transition-colors">
+                            </div>
+                            <div class="flex items-center gap-4 mb-10">
+                                <span class="material-icons-round text-slate-300">rocket_launch</span>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active
+                                    Initiatives</p>
+                            </div>
+                            <div>
+                                <h3 class="text-6xl font-extrabold text-slate-900 tracking-tighter mb-4"
+                                    id="totalProjects">0</h3>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
+                                    <p class="text-blue-500 text-[10px] font-bold uppercase tracking-widest">Systems
+                                        Capacity Stable</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="chart-card p-12 flex flex-col justify-between bg-slate-900 text-white relative overflow-hidden group border-none">
+                            <div
+                                class="absolute top-0 right-0 w-48 h-48 bg-orange-500/20 rounded-full -mr-24 -mt-24 blur-3xl">
+                            </div>
+                            <div class="flex items-center gap-4 mb-10">
+                                <span class="material-icons-round text-orange-400">insights</span>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Efficiency
+                                    Index</p>
+                            </div>
+                            <div>
+                                <h3 class="text-6xl font-extrabold text-white tracking-tighter mb-4" id="efficiency">94%
+                                </h3>
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="w-2 h-2 rounded-full bg-orange-500 shadow-md shadow-orange-500/50 animate-pulse"></span>
+                                    <p class="text-orange-400 text-[10px] font-bold uppercase tracking-widest">Peak
+                                        Operational Performance</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columnar Stats -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 pb-16">
+                        <div class="chart-card p-12">
+                            <div class="flex items-center justify-between mb-12">
+                                <h4 class="text-2xl font-bold text-slate-900 tracking-tight">Pipeline Distribution</h4>
+                                <span class="material-icons-round text-slate-300">hub</span>
+                            </div>
+                            <div id="pipelineContainer" class="space-y-10">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                        <div class="chart-card p-12">
+                            <div class="flex items-center justify-between mb-12">
+                                <h4 class="text-2xl font-bold text-slate-900 tracking-tight">Resource Allocation</h4>
+                                <span class="material-icons-round text-slate-300">leaderboard</span>
+                            </div>
+                            <div id="projectStats" class="space-y-10">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        const getProjects = async () => await SyncService.getProjects();
+        const getTasks = async () => await SyncService.getTasks();
+
+        async function renderStats() {
+            const tasks = await getTasks();
+            const projects = await getProjects();
+
+            document.getElementById('totalTasks').innerText = tasks.length + 148;
+            document.getElementById('totalProjects').innerText = projects.length;
+
+            // Pipeline
+            const statuses = ['Done', 'In Progress', 'Backlog', 'Review'];
+            const container = document.getElementById('pipelineContainer');
+            if (container) {
+                container.innerHTML = '';
+                statuses.forEach((s, idx) => {
+                    const count = tasks.filter(t => t.status === s).length + (s === 'Done' ? 92 : (s === 'In Progress' ? 34 : (s === 'Backlog' ? 12 : 10)));
+                    const max = (tasks.length + 148);
+                    const pct = Math.round((count / max) * 100) || 0;
+
+                    const colors = s === 'Done' ? 'bg-emerald-500' : (s === 'In Progress' ? 'bg-[#E96A2C]' : (s === 'Review' ? 'bg-amber-400' : 'bg-slate-300'));
+
+                    container.innerHTML += `
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">${s}</span>
+                                <span class="text-sm font-bold text-slate-900">${pct}% <span class="text-xs text-slate-400 font-medium ml-1">(${count} items)</span></span>
+                            </div>
+                            <div class="stat-bar"><div class="h-full ${colors} transition-all duration-1000 shadow-sm" style="width: ${pct}%"></div></div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Project Allocation
+            const projectBox = document.getElementById('projectStats');
+            if (projectBox) {
+                projectBox.innerHTML = '';
+                projects.forEach(p => {
+                    const pTasks = tasks.filter(t => t.project === p.name).length;
+                    const total = tasks.length || 1;
+                    const pct = Math.round((pTasks / total) * 100) || 5;
+                    projectBox.innerHTML += `
+                        <div class="flex items-center gap-8 group">
+                            <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors">
+                                <span class="text-xs font-bold text-slate-900 group-hover:text-orange-600 transition-colors">${pct}%</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-slate-900 uppercase tracking-widest mb-3">${p.name}</p>
+                                <div class="stat-bar"><div class="h-full bg-[#E96A2C] transition-all duration-1000 shadow-sm" style="width: ${pct}%"></div></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await SyncService.updateProfileUI();
+            await renderStats();
+        });
+    </script>
+</body>
+
+</html>
