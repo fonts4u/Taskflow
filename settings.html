@@ -91,6 +91,8 @@
 
         .profile-dropdown {
             position: relative;
+            padding: 10px 0;
+            margin: -10px 0;
         }
 
         .dropdown-content {
@@ -98,35 +100,29 @@
             position: absolute;
             right: 0;
             top: 100%;
-            margin-top: 1rem;
-            min-width: 220px;
-            background: white;
-            border-radius: 1.5rem;
-            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            z-index: 50;
+            min-width: 240px;
+            padding-top: 12px;
+            z-index: 100;
             transform-origin: top right;
             animation: dropdownFade 0.2s ease-out;
+        }
+
+        .dropdown-inner {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
 
         .profile-dropdown:hover .dropdown-content {
             display: block;
         }
 
-        .dropdown-content::before {
-            content: '';
-            position: absolute;
-            top: -1rem;
-            left: 0;
-            right: 0;
-            height: 1rem;
-        }
-
         @keyframes dropdownFade {
             from {
                 opacity: 0;
-                transform: scale(0.95) translateY(-10px);
+                transform: scale(0.95) translateY(-5px);
             }
 
             to {
@@ -216,17 +212,19 @@
                                     alt="User">
                             </div>
                             <div class="dropdown-content">
-                                <a href="settings.html"
-                                    class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
-                                    <span class="material-icons-round text-lg">settings</span>
-                                    Settings
-                                </a>
-                                <div class="h-px bg-slate-50 mx-4"></div>
-                                <button onclick="SyncService.logout()"
-                                    class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
-                                    <span class="material-icons-round text-lg">logout</span>
-                                    Logout
-                                </button>
+                                <div class="dropdown-inner">
+                                    <a href="settings.html"
+                                        class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
+                                        <span class="material-icons-round text-lg">settings</span>
+                                        Settings
+                                    </a>
+                                    <div class="h-px bg-slate-50 mx-4"></div>
+                                    <button onclick="SyncService.logout()"
+                                        class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
+                                        <span class="material-icons-round text-lg">logout</span>
+                                        Logout
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
