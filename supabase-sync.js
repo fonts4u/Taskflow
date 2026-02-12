@@ -314,26 +314,43 @@ const SyncService = {
 
     async uploadAvatar(file) {
         await this.ensureInit();
-        if (!window.supabase || !this.currentUser) return null;
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${this.currentUser.id}-${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await window.supabase.storage
-            .from('avatars')
-            .upload(filePath, file);
-
-        if (uploadError) {
-            console.error('Error uploading avatar:', uploadError);
+        if (!window.supabase || !this.currentUser) {
+            console.error('No Supabase client or user session found.');
             return null;
         }
 
-        const { data: { publicUrl } } = window.supabase.storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${this.currentUser.id}-${Date.now()}.${fileExt}`;
+        const filePath = fileName;
+
+        // Determine content type
+        const contentType = file.type || 'image/png';
+
+        console.log('Uploading file:', filePath, 'Type:', contentType);
+
+        const { error: uploadError } = await window.supabase.storage
+            .from('avatars')
+            .upload(filePath, file, {
+                contentType: contentType,
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (uploadError) {
+            console.error('Error uploading avatar:', uploadError.message || uploadError);
+            return null;
+        }
+
+        const { data } = window.supabase.storage
             .from('avatars')
             .getPublicUrl(filePath);
 
-        return publicUrl;
+        if (!data || !data.publicUrl) {
+            console.error('Failed to get public URL');
+            return null;
+        }
+
+        return data.publicUrl;
     },
 
     async seedDummyData() {
