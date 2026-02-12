@@ -106,6 +106,15 @@
             display: block;
         }
 
+        .dropdown-content::before {
+            content: '';
+            position: absolute;
+            top: -1rem;
+            left: 0;
+            right: 0;
+            height: 1rem;
+        }
+
         @keyframes dropdownFade {
             from {
                 opacity: 0;
