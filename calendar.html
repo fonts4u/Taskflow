@@ -99,8 +99,7 @@
 
         .profile-dropdown {
             position: relative;
-            padding: 20px 0;
-            margin: -20px 0;
+            cursor: pointer;
         }
 
         .dropdown-content {
@@ -108,20 +107,31 @@
             position: absolute;
             right: 0;
             top: 100%;
-            margin-top: -10px;
-            padding-top: 20px;
+            padding-top: 15px;
+            /* The Bridge */
             min-width: 240px;
-            z-index: 100;
+            z-index: 1000;
             transform-origin: top right;
             animation: dropdownFade 0.2s ease-out;
+        }
+
+        /* Invisible bridge to maintain hover */
+        .dropdown-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
         }
 
         .dropdown-inner {
             background: white;
             border-radius: 1.5rem;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(0, 0, 0, 0.08);
             overflow: hidden;
+            position: relative;
         }
 
         .profile-dropdown:hover .dropdown-content {
