@@ -264,25 +264,34 @@ const SyncService = {
     // --- EVENTS ---
     async getEvents() {
         await this.ensureInit();
+        let dbEvents = [];
         if (window.supabase && this.currentUser) {
+            console.log('SyncService: Fetching events from Supabase...');
             const { data, error } = await window.supabase
                 .from('events')
                 .select('*')
                 .eq('user_id', this.currentUser.id);
 
             if (!error && data) {
-                return data;
+                console.log(`SyncService: Found ${data.length} events in DB`);
+                dbEvents = data;
+            } else if (error) {
+                console.error('SyncService: Error fetching events:', error);
             }
         }
 
-        // Fallback
+        // Fallback or Merge
         const local = localStorage.getItem('tf_events');
-        return local ? JSON.parse(local) : [];
+        const localEvents = local ? JSON.parse(local) : [];
+        
+        if (dbEvents.length > 0) return dbEvents;
+        return localEvents;
     },
 
     async saveEvent(event) {
         await this.ensureInit();
         if (window.supabase && this.currentUser) {
+            console.log('SyncService: Saving event to Supabase...', event.title);
             const { error } = await window.supabase
                 .from('events')
                 .upsert({
@@ -293,10 +302,14 @@ const SyncService = {
                     color: event.color,
                     user_id: this.currentUser.id
                 });
-            if (!error) return;
+            if (error) {
+                console.error('SyncService: Supabase event save failed:', error);
+            } else {
+                console.log('SyncService: Supabase event save successful');
+            }
         }
 
-        // Fallback
+        // Always update local storage
         const events = await this.getEvents();
         if (event.id) {
             const index = events.findIndex(e => e.id === event.id);
@@ -307,6 +320,7 @@ const SyncService = {
             events.push(event);
         }
         localStorage.setItem('tf_events', JSON.stringify(events));
+        console.log('SyncService: Local storage events updated');
     },
 
     // --- PROFILES ---
