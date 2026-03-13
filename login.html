@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | TaskFlow Intelligence</title>
+    <title>Login | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
@@ -75,11 +75,11 @@
             </div>
 
             <h2 class="text-6xl font-black text-white mb-10 leading-[1.1] tracking-tight font-display">
-                Drive your <br>
-                <span class="text-[#E96A2C]">velocity</span> higher.
+                A simple workspace <br>
+                <span class="text-[#E96A2C]">to move forward.</span>
             </h2>
             <p class="text-slate-400 text-xl mb-16 leading-relaxed font-medium">
-                The most sophisticated intelligence ledger for high-performance engineering teams.
+                Join 12.4k+ active users delivering results faster with a smarter workflow.
             </p>
 
             <div class="flex items-center gap-8">
@@ -92,8 +92,8 @@
                         class="w-14 h-14 rounded-2xl border-4 border-slate-900 shadow-2xl" alt="">
                 </div>
                 <div>
-                    <p class="text-white font-bold text-lg leading-tight">12.4k+</p>
-                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Active Nodes</p>
+                    <p class="text-[#E96A2C] font-bold text-lg leading-tight">12.4k+</p>
+                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Active Users</p>
                 </div>
             </div>
         </div>
@@ -110,13 +110,12 @@
                 <span class="text-2xl font-bold font-display tracking-tight text-slate-900">TaskFlow</span>
             </div>
 
-            <h1 class="text-5xl font-black text-slate-900 mb-4 tracking-tight font-display">Authenticate</h1>
-            <p class="text-slate-500 font-medium mb-12 text-lg">Access your intelligence dashboard.</p>
+            <h1 class="text-5xl font-black text-slate-900 mb-4 tracking-tight font-display">Welcome back</h1>
+            <p class="text-slate-500 font-medium mb-12 text-lg">Sign in to manage your tasks.</p>
 
             <form action="dashboard.html" class="space-y-8">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">Neural
-                        Identifier</label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">Email Address</label>
                     <input type="email" placeholder="name@company.com"
                         class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg input-premium"
                         required>
@@ -124,8 +123,7 @@
 
                 <div>
                     <div class="flex justify-between mb-3">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Secret
-                            Key</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Password</label>
                         <a href="forgot-password.html"
                             class="text-[10px] font-bold text-[#E96A2C] uppercase tracking-widest hover:underline">Recovery</a>
                     </div>
@@ -142,7 +140,7 @@
 
                 <button type="submit"
                     class="w-full btn-premium text-white py-6 rounded-2xl font-black text-lg tracking-widest uppercase active:scale-[0.98] transition-all">
-                    Initiate Handshake
+                    Sign In
                 </button>
             </form>
 
@@ -151,8 +149,7 @@
                     <div class="w-full border-t border-slate-100"></div>
                 </div>
                 <span
-                    class="relative bg-white px-6 text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">External
-                    Sync</span>
+                    class="relative bg-white px-6 text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Or continue with</span>
             </div>
 
             <div class="flex flex-col gap-6">
@@ -166,9 +163,8 @@
                 </button>
             </div>
 
-            <p class="text-center mt-12 text-sm text-slate-500 font-medium">New operative? <a href="signup.html"
-                    class="text-[#E96A2C] font-black hover:underline uppercase tracking-widest text-xs ml-2">Secure
-                    Trial</a></p>
+            <p class="text-center mt-12 text-sm text-slate-500 font-medium">New to TaskFlow? <a href="signup.html"
+                    class="text-[#E96A2C] font-black hover:underline uppercase tracking-widest text-xs ml-2">Create Account</a></p>
         </div>
     </div>
 
@@ -177,6 +173,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-client.js"></script>
     <script>
+        // Redirect if already logged in
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) window.location.href = 'dashboard.html';
+        }
+        checkSession();
+
         function showToast(message, isError = false) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -222,7 +225,7 @@
 
                 if (error) throw error;
 
-                showToast('Authentication successful. Welcome to Control.');
+                showToast('Welcome back! Loading your dashboard.');
                 setTimeout(() => window.location.href = 'dashboard.html', 1500);
 
             } catch (err) {

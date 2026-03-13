@@ -4,12 +4,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Initiatives | TaskFlow Intelligence</title>
+    <title>Your Projects | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
     <style>
         :root {
             --primary: #E96A2C;
@@ -177,7 +209,7 @@
                     <span class="text-slate-300">/</span>
                     <span
                         class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Global
-                        Initiatives</span>
+                        Projects</span>
                 </div>
                 <div class="flex items-center gap-8">
                     <button onclick="handleSeedDemo()" id="seedDemoBtn"
@@ -229,22 +261,20 @@
                 <div class="max-w-7xl mx-auto">
                     <div class="flex justify-between items-end mb-16">
                         <div>
-                            <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-4">Strategic
-                                Initiative Portfolio</h1>
-                            <p class="text-slate-500 font-medium tracking-tight">Direct, track, and optimize your global
-                                project architecture.</p>
+                            <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-4">Your Projects</h1>
+                            <p class="text-slate-500 font-medium tracking-tight">Manage and track your project progress.</p>
                         </div>
                     </div>
 
                     <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 pb-12">
                         <!-- Populated by JS -->
-                        <button onclick="openModal()"
+                        <button onclick="openModal()" id="addProjectBtn"
                             class="border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-16 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/20 transition-all group">
                             <div
                                 class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-8 group-hover:bg-orange-50 group-hover:text-orange-600 transition-all">
                                 <span class="material-icons-round text-3xl">add</span>
                             </div>
-                            <span class="font-bold text-xs uppercase tracking-[0.2em]">Add Initiative</span>
+                            <span class="font-bold text-xs uppercase tracking-[0.2em]">Add Project</span>
                         </button>
                     </div>
                 </div>
@@ -258,27 +288,25 @@
         <div
             class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-12 animate-in zoom-in-95 duration-300 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-            <h3 class="text-3xl font-bold text-slate-900 mb-10 tracking-tight">Intelligence Launchpad</h3>
+            <h3 class="text-3xl font-bold text-slate-900 mb-10 tracking-tight">Create New Project</h3>
             <form onsubmit="handleCreateProject(event)" id="projectForm" class="space-y-8 relative z-10">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Initiative
-                        Identity</label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Project Name</label>
                     <input type="text" id="projName" placeholder="Project name"
                         class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg"
                         required>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Strategic
-                        Overview</label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
                     <textarea id="projDesc" rows="3" placeholder="Contextual brief..."
                         class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-medium text-sm"></textarea>
                 </div>
                 <div class="pt-6 flex gap-4">
                     <button type="button" onclick="closeModal()"
-                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Abort</button>
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Cancel</button>
                     <button type="submit"
                         class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">
-                        Disseminate
+                        Create Project
                     </button>
                 </div>
             </form>
@@ -292,14 +320,14 @@
                 class="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8 transform -rotate-12 group hover:rotate-0 transition-all duration-500">
                 <span class="material-icons-round text-4xl">delete_sweep</span>
             </div>
-            <h3 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Purge Project?</h3>
-            <p class="text-slate-500 mb-10 text-sm leading-relaxed font-medium">All associated intelligence will be
-                wiped. This action is terminal and cannot be reversed.</p>
+            <h3 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Delete Project?</h3>
+            <p class="text-slate-500 mb-10 text-sm leading-relaxed font-medium">This action cannot be undone. All tasks in this project 
+                will be permanently removed.</p>
             <div class="flex gap-4">
                 <button onclick="closeDeleteModal()"
-                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all text-xs uppercase tracking-widest">Keep</button>
+                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all text-xs uppercase tracking-widest">Cancel</button>
                 <button onclick="confirmRemoveProject()"
-                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-white bg-rose-500 shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all text-xs uppercase tracking-widest">Execute</button>
+                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-white bg-rose-500 shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all text-xs uppercase tracking-widest">Delete</button>
             </div>
         </div>
     </div>
@@ -328,7 +356,7 @@
                     <span class="material-icons-round text-xl">${icon}</span>
                 </div>
                 <div>
-                    <span class="font-bold text-slate-900 block text-sm">Strategic Pulse</span>
+                    <span class="font-bold text-slate-900 block text-sm">TaskFlow Intelligence</span>
                     <span class="text-xs text-slate-500">${message}</span>
                 </div>
             `;
@@ -342,14 +370,22 @@
         }
 
         function renderProjects() {
+            console.log('Rendering intelligence portfolio...', projects);
             const grid = document.getElementById('projectGrid');
-            const addButton = grid.querySelector('button');
+            const addButton = document.getElementById('addProjectBtn');
+            
+            if (!grid || !addButton) {
+                console.error('Core UI components missing');
+                return;
+            }
 
+            // Clear existing project cards
             grid.querySelectorAll('.project-card').forEach(c => c.remove());
             const emptyState = document.getElementById('emptyStateNotice');
             if (emptyState) emptyState.remove();
 
-            if (projects.length === 0) {
+            if (!Array.isArray(projects) || projects.length === 0) {
+                console.log('No active projects detected');
                 const emptyNotice = document.createElement('div');
                 emptyNotice.id = 'emptyStateNotice';
                 emptyNotice.className = 'col-span-full py-32 text-center flex flex-col items-center justify-center';
@@ -357,15 +393,19 @@
                     <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-8 text-slate-200">
                          <span class="material-icons-round text-5xl">folder_off</span>
                     </div>
-                    <p class="font-bold text-xs uppercase tracking-[0.2em] text-slate-400">Workspace at terminal capacity. No initiatives found.</p>
+                    <p class="font-bold text-xs uppercase tracking-[0.2em] text-slate-400">Workspace Clear. Create your first project to get started.</p>
                 `;
                 grid.insertAdjacentElement('afterbegin', emptyNotice);
+                return;
             }
 
+            // Render project cards
             projects.forEach(p => {
-                const isArchived = p.status === 'Archived';
+                if (!p) return;
+                const isArchived = (p.status === 'Archived');
                 const card = document.createElement('div');
                 card.className = `project-card flex flex-col ${isArchived ? 'opacity-50 grayscale' : ''} overflow-hidden`;
+                
                 const accentColor = p.color === 'teal' ? '#0D9488' : '#E96A2C';
                 const accentBg = p.color === 'teal' ? 'bg-teal-50 text-teal-600' : 'bg-orange-50 text-[#E96A2C]';
 
@@ -387,13 +427,13 @@
                         </div>
                         <div class="cursor-pointer flex-1 group" onclick="window.location.href='kanban.html?project=${encodeURIComponent(p.name)}'">
                             <h3 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight group-hover:text-[#E96A2C] transition-colors">${p.name}</h3>
-                            <p class="text-[13px] text-slate-500 font-medium mb-10 leading-relaxed line-clamp-2">${p.desc || 'No strategic overview provided for this initiative.'}</p>
+                            <p class="text-[13px] text-slate-500 font-medium mb-10 leading-relaxed line-clamp-2">${p.desc || 'No description provided.'}</p>
                             <div class="mt-auto space-y-6">
                                 <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                    <span>Intelligence Progress</span>
-                                    <span class="text-slate-900">${p.progress}%</span>
+                                    <span>Project Progress</span>
+                                    <span class="text-slate-900">${p.progress || 0}%</span>
                                 </div>
-                                <div class="progress-bar"><div class="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(0,0,0,0.1)]" style="width: ${p.progress}%; background-color: ${accentColor};"></div></div>
+                                <div class="progress-bar"><div class="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(0,0,0,0.1)]" style="width: ${p.progress || 0}%; background-color: ${accentColor};"></div></div>
                             </div>
                         </div>
                     </div>
@@ -419,9 +459,9 @@
 
         async function handleSeedDemo() {
             if (confirm('This will populate your workspace with dummy projects and tasks. Continue?')) {
-                showToast('Injecting Intelligence...');
+                showToast('Loading sample data...');
                 await SyncService.seedDummyData();
-                showToast('Strategic Seeding Complete');
+                showToast('Sample data loaded successfully.');
                 location.reload();
             }
         }
@@ -436,20 +476,18 @@
                 color: "orange"
             };
             await SyncService.saveProject(p);
-            projects = await getProjects();
-            await renderProjects();
+            showToast('Project created successfully');
             closeModal();
             document.getElementById('projectForm').reset();
-            showToast('Initiative Core Online');
+            setTimeout(() => location.reload(), 800);
         }
 
         async function confirmRemoveProject() {
             if (projectToRemoveId) {
                 await SyncService.deleteProject(projectToRemoveId);
-                projects = await getProjects();
-                await renderProjects();
+                showToast('Project deleted successfully.');
                 closeDeleteModal();
-                showToast('Initiative and associated data purged', true);
+                setTimeout(() => location.reload(), 800);
             }
         }
 
@@ -460,7 +498,7 @@
                 await SyncService.saveProject(p);
                 projects = await getProjects();
                 await renderProjects();
-                showToast(p.status === 'Archived' ? 'Moved to Secure Vault' : 'Initiative Reactivated');
+                showToast(p.status === 'Archived' ? 'Project archived' : 'Project reactivated');
             }
         }
     </script>

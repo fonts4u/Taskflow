@@ -10,6 +10,38 @@
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
     <style>
         :root {
             --primary: #E96A2C;
@@ -187,14 +219,14 @@
                     <span class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Context</span>
                     <span class="text-slate-300">/</span>
                     <span
-                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Intelligence
-                        Insights</span>
+                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Team
+                        Performance</span>
                 </div>
                 <div class="flex items-center gap-8">
                     <button onclick="window.print()"
                         class="flex items-center gap-2 bg-white px-6 py-3 rounded-2xl text-xs font-bold text-slate-600 shadow-sm border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 uppercase tracking-widest">
                         <span class="material-icons-round text-lg">picture_as_pdf</span>
-                        Export Intel
+                        Export PDF
                     </button>
                     <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
                         <div class="profile-dropdown">
@@ -234,10 +266,8 @@
                 <div class="max-w-7xl mx-auto space-y-12">
                     <div class="flex justify-between items-end mb-16">
                         <div>
-                            <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-4">Strategic
-                                Intelligence Overview</h1>
-                            <p class="text-slate-500 font-medium tracking-tight">Real-time performance throughput and
-                                initiative resource utilization.</p>
+                            <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-4">Team Performance Overview</h1>
+                            <p class="text-slate-500 font-medium tracking-tight">Monitor productivity, project status, and team workload.</p>
                         </div>
                     </div>
 
@@ -249,8 +279,7 @@
                             </div>
                             <div class="flex items-center gap-4 mb-10">
                                 <span class="material-icons-round text-slate-300">speed</span>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Velocity
-                                    Throughput</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Team Velocity</p>
                             </div>
                             <div>
                                 <h3 class="text-6xl font-extrabold text-slate-900 tracking-tighter mb-4"
@@ -258,8 +287,7 @@
                                 <div class="flex items-center gap-2">
                                     <span
                                         class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
-                                    <p class="text-emerald-500 text-[10px] font-bold uppercase tracking-widest">Optimal
-                                        Node Flow</p>
+                                    <p class="text-emerald-500 text-[10px] font-bold uppercase tracking-widest">Productivity Insight</p>
                                 </div>
                             </div>
                         </div>
@@ -270,15 +298,14 @@
                             <div class="flex items-center gap-4 mb-10">
                                 <span class="material-icons-round text-slate-300">rocket_launch</span>
                                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active
-                                    Initiatives</p>
+                                    Projects</p>
                             </div>
                             <div>
                                 <h3 class="text-6xl font-extrabold text-slate-900 tracking-tighter mb-4"
                                     id="totalProjects">0</h3>
                                 <div class="flex items-center gap-2">
                                     <span class="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
-                                    <p class="text-blue-500 text-[10px] font-bold uppercase tracking-widest">Systems
-                                        Capacity Stable</p>
+                                    <p class="text-blue-500 text-[10px] font-bold uppercase tracking-widest">System health optimal</p>
                                 </div>
                             </div>
                         </div>
@@ -289,8 +316,7 @@
                             </div>
                             <div class="flex items-center gap-4 mb-10">
                                 <span class="material-icons-round text-orange-400">insights</span>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Efficiency
-                                    Index</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sprint Progress</p>
                             </div>
                             <div>
                                 <h3 class="text-6xl font-extrabold text-white tracking-tighter mb-4" id="efficiency">94%
@@ -298,8 +324,7 @@
                                 <div class="flex items-center gap-2">
                                     <span
                                         class="w-2 h-2 rounded-full bg-orange-500 shadow-md shadow-orange-500/50 animate-pulse"></span>
-                                    <p class="text-orange-400 text-[10px] font-bold uppercase tracking-widest">Peak
-                                        Operational Performance</p>
+                                    <p class="text-orange-400 text-[10px] font-bold uppercase tracking-widest">Track completed tasks</p>
                                 </div>
                             </div>
                         </div>
@@ -309,7 +334,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 pb-16">
                         <div class="chart-card p-12">
                             <div class="flex items-center justify-between mb-12">
-                                <h4 class="text-2xl font-bold text-slate-900 tracking-tight">Pipeline Distribution</h4>
+                                <h4 class="text-2xl font-bold text-slate-900 tracking-tight">Task Overview</h4>
                                 <span class="material-icons-round text-slate-300">hub</span>
                             </div>
                             <div id="pipelineContainer" class="space-y-10">

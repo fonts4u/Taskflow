@@ -4,12 +4,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intelligence Detail | TaskFlow</title>
+    <title>Task Details | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
     <style>
         :root {
             --primary: #E96A2C;
@@ -165,8 +197,7 @@
                     </a>
                     <div class="h-6 w-px bg-slate-200"></div>
                     <span
-                        class="text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] bg-slate-100 px-3 py-1.5 rounded-lg">Initiative
-                        Intelligence</span>
+                        class="text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] bg-slate-100 px-3 py-1.5 rounded-lg">Task Details</span>
                 </div>
                 <div class="flex items-center gap-8">
                     <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
@@ -239,39 +270,35 @@
         <div
             class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 animate-in zoom-in-95 duration-300 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-            <h3 class="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Modify Intelligence</h3>
+            <h3 class="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Edit Task</h3>
             <form id="taskForm" onsubmit="handleSaveTask(event)" class="space-y-8 relative z-10">
                 <input type="hidden" id="taskIdInput">
                 <div>
                     <label
-                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Intelligence
-                        Identity</label>
+                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Task Title</label>
                     <input type="text" id="titleInput"
                         class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg"
                         required>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Initiative
-                        Context</label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Project</label>
                     <select id="projSelect"
                         class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold"></select>
                 </div>
                 <div class="grid grid-cols-2 gap-8">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Urgency
-                            Rating</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority</label>
                         <select id="priorityInput"
                             class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
-                            <option value="High">🔴 High Priority</option>
-                            <option value="Medium">🟡 Standard</option>
-                            <option value="Low">🟢 Casual</option>
+                            <option value="High">🔴 High</option>
+                            <option value="Medium">🟡 Medium</option>
+                            <option value="Low">🟢 Low</option>
                         </select>
                     </div>
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Operational
-                            Note</label>
-                        <input type="text" id="descInput" placeholder="Quick brief..."
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                        <input type="text" id="descInput" placeholder="Add details or context"
                             class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
                     </div>
                 </div>
@@ -279,8 +306,7 @@
                     <button type="button" onclick="closeModal()"
                         class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Cancel</button>
                     <button type="submit"
-                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">Apply
-                        Changes</button>
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -340,19 +366,19 @@
                                 <span class="material-icons-round text-5xl">fmd_bad</span>
                             </div>
                             <div class="space-y-2">
-                                <p class="text-slate-900 font-bold text-xl">Intelligence Missing</p>
-                                <p class="text-slate-400 font-medium max-w-xs mx-auto">This operation payload could not be retrieved from the intelligence ledger.</p>
+                                <p class="text-slate-900 font-bold text-xl">Task Not Found</p>
+                                <p class="text-slate-400 font-medium max-w-xs mx-auto">This task could not be found. It may have been deleted.</p>
                             </div>
-                            <button onclick="window.location.href='dashboard.html'" class="mt-4 px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all">Return to Command</button>
+                            <button onclick="window.location.href='dashboard.html'" class="mt-4 px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all">Go Back</button>
                         </div>`;
                     return;
                 }
 
-                const title = task.title || 'Untitled Intelligence';
-                const project = task.project || 'Global Initiative';
+                const title = task.title || 'Untitled Task';
+                const project = task.project || 'No Project';
                 const priority = task.priority || 'Medium';
                 const status = task.status || 'Active';
-                const description = task.desc || task.description || 'No detailed intelligence available for this operation payload.';
+                const description = task.desc || task.description || 'No description provided.';
                 const id = task.id ? `#${task.id.slice(0, 8)}` : 'UNKNOWN';
                 const due = task.due || 'ASAP Deployment';
 
@@ -364,38 +390,34 @@
                     container.innerHTML = `
                         <div class="flex justify-between items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div class="space-y-6">
-                                <span class="text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">${project}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">Project: ${project}</span>
                                 <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-[1.1]">${title}</h1>
                             </div>
                             <div class="flex flex-col items-end gap-3 text-right">
-                                <span class="flex items-center gap-2 text-[10px] font-bold text-${priorityColor}-600 uppercase tracking-widest bg-${priorityColor}-50 px-4 py-2.5 rounded-2xl border border-${priorityColor}-100">
-                                     <span class="w-2 h-2 rounded-full bg-${priorityColor}-500 shadow-sm shadow-${priorityColor}-500/50"></span>
-                                     ${priority} Priority
-                                </span>
+                                 <span class="flex items-center gap-2 text-[10px] font-bold text-${priorityColor}-600 uppercase tracking-widest bg-${priorityColor}-50 px-4 py-2.5 rounded-2xl border border-${priorityColor}-100">
+                                      <span class="w-2 h-2 rounded-full bg-${priorityColor}-500 shadow-sm shadow-${priorityColor}-500/50"></span>
+                                      ${priority} Priority
+                                 </span>
                                 <span class="flex items-center gap-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-4 py-2.5 rounded-2xl border border-blue-100">
                                     <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                                    ${status}
+                                    Status: ${status}
                                 </span>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-12 py-12 border-y border-slate-50 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                        <div class="grid grid-cols-2 gap-12 py-12 border-y border-slate-50 animate-in fade-in slide-in-from-bottom-6 duration-700">
                             <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Intelligence Node</p>
-                                <p class="text-slate-900 font-bold tracking-tight text-lg">${id}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Temporal Goal</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Due Date</p>
                                 <p class="text-slate-900 font-bold tracking-tight text-lg">${due}</p>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">System Integrity</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Status</p>
                                 <p class="text-emerald-500 font-bold tracking-tight uppercase text-lg flex items-center gap-2"><span class="material-icons-round text-lg">verified</span> Verified</p>
                             </div>
                         </div>
 
                         <div class="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mission Context & Narrative</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</p>
                             <p class="text-xl text-slate-600 font-medium leading-[1.6]">${description}</p>
                         </div>
 
@@ -403,14 +425,14 @@
                             <div class="flex gap-4">
                                 <button onclick="openEditModal()" class="bg-[#E96A2C] text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-orange-500/30 active:scale-95 transition-all flex items-center gap-2">
                                      <span class="material-icons-round">edit</span>
-                                     Modify Intel
+                                     Edit Task
                                 </button>
                                 <button onclick="window.location.href='kanban.html?project=${encodeURIComponent(project)}'" class="bg-slate-50 text-slate-500 px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95 flex items-center gap-2">
                                      <span class="material-icons-round">view_kanban</span>
-                                     Audit Board
+                                     Go to Board
                                 </button>
                             </div>
-                            <button onclick="history.back()" class="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 transition-colors">Return to Ops</button>
+                            <button onclick="history.back()" class="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 transition-colors">Go Back</button>
                         </div>
                     `;
                     container.classList.remove('opacity-0');
@@ -420,14 +442,10 @@
                 const container = document.getElementById('taskDetailContent');
                 container.innerHTML = `
                     <div class="text-center py-20 flex flex-col items-center gap-6">
-                        <div class="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-500">
-                            <span class="material-icons-round text-5xl">emergency_home</span>
+                            <p class="text-slate-900 font-bold text-xl">Connection Error</p>
+                            <p class="text-slate-400 font-medium">A communication error occurred while fetching task details.</p>
                         </div>
-                        <div class="space-y-2">
-                            <p class="text-slate-900 font-bold text-xl">Handshake Protocol Failed</p>
-                            <p class="text-slate-400 font-medium">A communication error occurred with the intelligence server.</p>
-                        </div>
-                        <button onclick="location.reload()" class="mt-4 px-8 py-3 bg-[#E96A2C] text-white rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-orange-500/20">Retry Pulse</button>
+                        <button onclick="location.reload()" class="mt-4 px-8 py-3 bg-[#E96A2C] text-white rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-orange-500/20">Retry</button>
                     </div>`;
             }
         }
@@ -466,7 +484,7 @@
 
             await SyncService.saveTask(task);
             closeModal();
-            showToast('Intelligence updated successfully');
+            showToast('Changes saved.');
             await renderTaskDetail();
         }
 

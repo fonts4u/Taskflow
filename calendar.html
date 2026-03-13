@@ -4,12 +4,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temporal Intelligence | TaskFlow</title>
+    <title>Calendar | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
     <style>
         :root {
             --primary: #E96A2C;
@@ -214,7 +246,7 @@
                     <button onclick="handleSeedDemo()" id="seedDemoBtn"
                         class="flex items-center gap-2 bg-white px-5 py-3 rounded-2xl text-[10px] font-bold text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all uppercase tracking-widest">
                         <span class="material-icons-round text-lg text-orange-500">auto_awesome</span>
-                        Initialize Intel
+                        Load Sample Data
                     </button>
                     <button onclick="openEventModal()"
                         class="bg-[#E96A2C] text-white px-8 py-3.5 rounded-2xl font-bold text-xs shadow-2xl shadow-orange-500/20 active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2">
@@ -228,7 +260,8 @@
                                     <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
                                         Johnson</p>
                                     <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-                                        Temporal Lead</p>
+                                        Systems
+                                        Lead</p>
                                 </div>
                                 <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
                                     class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
@@ -291,7 +324,7 @@
             <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-10">
-                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 font-display">Log Event Intel</h2>
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 font-display">Add Task</h2>
                     <button onclick="closeEventModal()"
                         class="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-400">
                         <span class="material-icons-round">close</span>
@@ -299,28 +332,25 @@
                 </div>
                 <form id="eventForm" class="space-y-8">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Event
-                            Identity</label>
-                        <input type="text" id="eventTitle" required placeholder="Team Sync"
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Task Title</label>
+                        <input type="text" id="eventTitle" required placeholder="Describe the task"
                             class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg">
                     </div>
                     <div class="grid grid-cols-2 gap-8">
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Temporal
-                                Goal</label>
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Due Date</label>
                             <input type="date" id="eventDate" required
                                 class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority
-                                Marker</label>
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority</label>
                             <select id="eventColor"
                                 class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
-                                <option value="orange">🟠 Priority Alpha</option>
-                                <option value="teal">🟢 Operational</option>
-                                <option value="rose">🔴 Critical</option>
+                                <option value="orange">🟠 Medium</option>
+                                <option value="rose">🔴 High</option>
+                                <option value="teal">🟢 Low</option>
                                 <option value="indigo">🔵 Strategic</option>
                                 <option value="amber">🟡 Casual</option>
                             </select>
@@ -328,15 +358,13 @@
                     </div>
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Intelligence
-                            Description</label>
-                        <textarea id="eventDescription" placeholder="Brief mission details..." rows="3"
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                        <textarea id="eventDescription" placeholder="Add details or context" rows="3"
                             class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm resize-none"></textarea>
                     </div>
                     <div class="pt-4">
                         <button type="submit"
-                            class="w-full px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">Authorize
-                            Event</button>
+                            class="w-full px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">Add Task</button>
                     </div>
                 </form>
             </div>
@@ -376,10 +404,10 @@
         }
 
         async function handleSeedDemo() {
-            if (confirm('Authorize system to populate workspace with synthetic project data?')) {
-                showToast('Injecting Intelligence Node... Please wait.');
+            if (confirm('Load sample project and task data into your workspace?')) {
+                showToast('Loading sample projects and tasks... Please wait.');
                 await SyncService.seedDummyData();
-                showToast('Synthetic Intelligence Synchronized!');
+                showToast('Sample data loaded successfully.');
                 setTimeout(() => location.reload(), 1000);
             }
         }
@@ -512,7 +540,7 @@
             await SyncService.saveEvent(event);
 
             closeEventModal();
-            showToast('Temporal intelligence logged');
+            showToast('Changes saved.');
             await renderCalendar();
 
             btn.disabled = false;

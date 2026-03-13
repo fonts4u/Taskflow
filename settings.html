@@ -4,12 +4,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Systems Configuration | TaskFlow</title>
+    <title>Settings | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
     <style>
         :root {
             --primary: #E96A2C;
@@ -193,13 +225,11 @@
                     <span class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Context</span>
                     <span class="text-slate-300">/</span>
                     <span
-                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Account
-                        Preferences</span>
+                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Settings</span>
                 </div>
                 <div class="flex items-center gap-8">
                     <button id="saveProfileBtn" onclick="handleSaveProfile()"
-                        class="bg-[#E96A2C] text-white px-8 py-3.5 rounded-2xl font-bold text-xs shadow-2xl shadow-orange-500/20 active:scale-95 transition-all uppercase tracking-widest">Commit
-                        Changes</button>
+                        class="bg-[#E96A2C] text-white px-8 py-3.5 rounded-2xl font-bold text-xs shadow-2xl shadow-orange-500/20 active:scale-95 transition-all uppercase tracking-widest">Save Changes</button>
                     <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
                         <div class="profile-dropdown">
                             <div class="flex items-center gap-4 ml-4 group cursor-pointer">
@@ -240,33 +270,33 @@
                 <div class="w-72 flex flex-col gap-3 shrink-0">
                     <button class="tab-active text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
                         <span class="material-icons-round text-lg">person</span>
-                        Profile Intelligence
+                        Profile
                     </button>
                     <button
                         class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
                         <span class="material-icons-round text-lg">group</span>
-                        Squad Management
+                        Team Management
                     </button>
                     <button
                         class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
                         <span class="material-icons-round text-lg">notifications</span>
-                        Signal Protocols
+                        Notifications
                     </button>
                     <button
                         class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
                         <span class="material-icons-round text-lg">shield</span>
-                        Encryption Path
+                        Security
                     </button>
                     <button
                         class="text-slate-400 hover:bg-slate-100 hover:text-slate-900 text-left px-6 py-4 rounded-2xl transition-all flex items-center gap-3">
                         <span class="material-icons-round text-lg">credit_card</span>
-                        Resource Allocation
+                        Billing & Plans
                     </button>
                     <div class="mt-8 pt-8 border-t border-slate-100">
                         <button id="logoutBtn"
                             class="text-rose-500 font-bold hover:bg-rose-50 text-left px-6 py-4 rounded-2xl transition-all w-full flex items-center gap-3">
                             <span class="material-icons-round text-lg">logout</span>
-                            Terminate Session
+                            Sign Out
                         </button>
                     </div>
                 </div>
@@ -276,9 +306,8 @@
                     <div class="settings-card p-12">
                         <div class="flex items-center justify-between mb-12">
                             <div>
-                                <h2 class="text-3xl font-bold tracking-tight text-slate-900 font-display">System
-                                    Identity</h2>
-                                <p class="text-slate-400 text-sm mt-1">Manage how you appear across the workspace.</p>
+                                <h2 class="text-3xl font-bold tracking-tight text-slate-900 font-display">Profile Settings</h2>
+                                <p class="text-slate-400 text-sm mt-1">Update your personal information and profile picture.</p>
                             </div>
                         </div>
 
@@ -294,19 +323,15 @@
                                 </button>
                             </div>
                             <div class="flex-1">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Biometric
-                                    Image</p>
-                                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Identity marker used for
-                                    collaboration. Supported formats: JPG, PNG, GIF. Max limit 800KB.</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Profile Picture</p>
+                                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Your avatar will be visible to your team members. Supported formats: JPG, PNG, GIF. Max limit 800KB.</p>
                                 <div class="flex gap-4">
                                     <input type="file" id="avatarInput" class="hidden" accept="image/*"
                                         onchange="handleImageUpload(event)">
                                     <button onclick="document.getElementById('avatarInput').click()"
-                                        class="bg-slate-900 text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95">Synchronize
-                                        New</button>
+                                        class="bg-slate-900 text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95">Upload Photo</button>
                                     <button onclick="handleRemoveAvatar()"
-                                        class="text-slate-400 font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:text-rose-500 transition-all border border-slate-100 hover:border-rose-100 hover:bg-rose-50">Reset
-                                        Legacy</button>
+                                        class="text-slate-400 font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:text-rose-500 transition-all border border-slate-100 hover:border-rose-100 hover:bg-rose-50">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -314,30 +339,26 @@
                         <div class="grid grid-cols-2 gap-10">
                             <div class="space-y-3">
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Given
-                                    Name</label>
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">First Name</label>
                                 <input type="text" id="firstName" placeholder="Alex"
                                     class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg premium-input">
                             </div>
                             <div class="space-y-3">
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Family
-                                    Name</label>
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Last Name</label>
                                 <input type="text" id="lastName" placeholder="Johnson"
                                     class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg premium-input">
                             </div>
                             <div class="col-span-2 space-y-3">
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Digital
-                                    Coordinates (Email)</label>
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                                 <input type="email" id="email" readonly
                                     class="w-full px-6 py-5 rounded-2xl border-none bg-slate-100 text-slate-400 cursor-not-allowed outline-none transition-all font-bold text-lg">
                             </div>
                             <div class="col-span-2 space-y-3">
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Operational
-                                    Role</label>
-                                <input type="text" id="jobTitle" placeholder="Quantum Architect"
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Job Title</label>
+                                <input type="text" id="jobTitle" placeholder="Software Engineer"
                                     class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg premium-input">
                             </div>
                         </div>
@@ -347,8 +368,8 @@
                         <div class="flex items-center justify-between mb-10">
                             <div>
                                 <h2 class="text-2xl font-bold tracking-tight text-slate-900 font-display text-lg">
-                                    Protocol Security</h2>
-                                <p class="text-slate-400 text-xs mt-1">Fortify your digital presence.</p>
+                                    Security & Privacy</h2>
+                                <p class="text-slate-400 text-xs mt-1">Manage your account security and authentication methods.</p>
                             </div>
                         </div>
                         <div class="space-y-6">
@@ -360,9 +381,8 @@
                                         <span class="material-icons-round text-2xl">verified_user</span>
                                     </div>
                                     <div>
-                                        <p class="font-bold text-slate-900">Dual-Phase Authentication</p>
-                                        <p class="text-xs text-slate-500 mt-1">Enhanced biometrics and SMS verification
-                                            protocols.</p>
+                                        <p class="font-bold text-slate-900">Two-Factor Authentication</p>
+                                        <p class="text-xs text-slate-500 mt-1">Add an extra layer of security to your account.</p>
                                     </div>
                                 </div>
                                 <div
@@ -378,12 +398,12 @@
                                         <span class="material-icons-round text-2xl">key</span>
                                     </div>
                                     <div>
-                                        <p class="font-bold text-slate-900">Access Key Cipher</p>
-                                        <p class="text-xs text-slate-500 mt-1">Last rotated 120 cycles ago.</p>
+                                        <p class="font-bold text-slate-900">Change Password</p>
+                                        <p class="text-xs text-slate-500 mt-1">It's a good idea to use a strong password that you don't use elsewhere.</p>
                                     </div>
                                 </div>
                                 <button
-                                    class="bg-white px-8 py-3 rounded-xl shadow-sm border border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all active:scale-95">Rotate</button>
+                                    class="bg-white px-8 py-3 rounded-xl shadow-sm border border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all active:scale-95">Update</button>
                             </div>
                         </div>
                     </div>
@@ -471,11 +491,11 @@
             if (publicUrl) {
                 preview.src = publicUrl;
                 preview.style.opacity = '1';
-                showToast('Biometric data uploaded. Commit changes to save.');
+                showToast('Profile image updated. Apply and save updates.');
             } else {
                 preview.src = originalSrc;
                 preview.style.opacity = '1';
-                showToast('Upload handshake failed.', true);
+                showToast('Upload failed.', true);
             }
         }
 
@@ -486,13 +506,13 @@
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=E96A2C&color=fff&size=256`;
 
             document.getElementById('profilePreview').src = defaultAvatar;
-            showToast('Identity marker reset.');
+            showToast('Profile image reset.');
         }
 
         async function handleSaveProfile() {
             const btn = document.getElementById('saveProfileBtn');
             const originalText = btn.innerText;
-            btn.innerText = 'Synchronizing...';
+            btn.innerText = 'Saving changes...';
             btn.disabled = true;
 
             const firstName = document.getElementById('firstName').value;
@@ -510,7 +530,7 @@
             await SyncService.saveProfile(profile);
             await SyncService.updateProfileUI();
 
-            showToast('System configuration synchronized.');
+            showToast('Profile updated successfully.');
 
             btn.innerText = originalText;
             btn.disabled = false;

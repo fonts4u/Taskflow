@@ -42,7 +42,7 @@ const SyncService = {
                 .select('*')
                 .eq('user_id', this.currentUser.id);
 
-            if (!error) {
+            if (!error && data) {
                 // Map DB fields to JS fields
                 return data.map(p => ({
                     ...p,
@@ -88,15 +88,34 @@ const SyncService = {
     async deleteProject(projectId) {
         await this.ensureInit();
         if (window.supabase && this.currentUser) {
-            await window.supabase
-                .from('projects')
-                .delete()
-                .eq('id', projectId);
+            try {
+                // 1. Delete associated tasks first to avoid FK constraints
+                await window.supabase
+                    .from('tasks')
+                    .delete()
+                    .eq('project_id', projectId);
+
+                // 2. Delete the project
+                const { error } = await window.supabase
+                    .from('projects')
+                    .delete()
+                    .eq('id', projectId);
+
+                if (error) throw error;
+            } catch (err) {
+                console.error('Database deletion failed:', err);
+            }
         }
 
+        // Always update local storage for fallback consistency
         const projects = await this.getProjects();
         const filtered = projects.filter(p => p.id !== projectId);
         localStorage.setItem('tf_projects', JSON.stringify(filtered));
+        
+        // Also cleanup local tasks
+        const tasks = await this.getTasks();
+        const filteredTasks = tasks.filter(t => t.project_id !== projectId);
+        localStorage.setItem('tf_tasks', JSON.stringify(filteredTasks));
     },
 
     // --- TASKS ---
@@ -108,7 +127,7 @@ const SyncService = {
                 .select('*')
                 .eq('user_id', this.currentUser.id);
 
-            if (!error) {
+            if (!error && data) {
                 // Map DB fields to JS fields
                 return data.map(t => ({
                     ...t,
@@ -195,7 +214,7 @@ const SyncService = {
                 .select('*')
                 .eq('user_id', this.currentUser.id);
 
-            if (!error) {
+            if (!error && data) {
                 return data;
             }
         }
@@ -248,6 +267,15 @@ const SyncService = {
 
             if (!error && data) {
                 profileData = data;
+            } else if (this.currentUser) {
+                // Fallback to user metadata (e.g. from Google login)
+                const meta = this.currentUser.user_metadata;
+                profileData = {
+                    full_name: meta.full_name || meta.name || '',
+                    avatar_url: meta.avatar_url || meta.picture || '',
+                    first_name: meta.full_name ? meta.full_name.split(' ')[0] : (meta.name ? meta.name.split(' ')[0] : ''),
+                    last_name: meta.full_name ? meta.full_name.split(' ').slice(1).join(' ') : (meta.name ? meta.name.split(' ').slice(1).join(' ') : '')
+                };
             }
         }
 

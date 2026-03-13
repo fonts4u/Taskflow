@@ -4,12 +4,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | TaskFlow Intelligence</title>
+    <title>Dashboard | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return; // Already logged in, we are good.
+
+            // If we have a hash, wait for Supabase to process it
+            if (window.location.hash.includes('access_token=')) {
+                // Wait for the auth state to change to SIGNED_IN
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return; // Session established!
+                    }
+                });
+
+                // Safety timeout: if after 3 seconds we still have no session, redirect
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+
+            // No session and no hash? Redirect immediately
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
     <style>
         :root {
             --primary: #E96A2C;
@@ -169,7 +208,7 @@
                 <div class="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden">
                     <div class="relative z-10">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Workspace</p>
-                        <p class="text-lg font-bold mb-4">Intelligence <span class="text-orange-500">v2.4</span></p>
+                        <p class="text-lg font-bold mb-4">TaskFlow <span class="text-orange-500">v2.4</span></p>
                         <button
                             class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all uppercase tracking-widest">Upgrade</button>
                     </div>
@@ -183,8 +222,7 @@
                 <div class="flex items-center gap-6">
                     <div class="flex items-center gap-2 text-slate-400">
                         <span class="material-icons-round text-sm">public</span>
-                        <span class="text-[10px] font-bold uppercase tracking-[0.2em]">Global Intelligence
-                            Network</span>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em]">Global Workspace Network</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-8">
@@ -243,14 +281,13 @@
                     <div class="flex justify-between items-end">
                         <div>
                             <h1 class="text-5xl font-bold text-slate-900 mb-2 tracking-tight">Good morning, <span
-                                    id="welcomeName" class="text-orange-500">Alex Johnson</span>!</h1>
-                            <p class="text-slate-500 font-medium tracking-tight">System health and project velocity
-                                looks <span class="text-emerald-500 font-bold">optimal</span> today.</p>
+                                    id="welcomeName" class="text-orange-500">Alex Johnson</span> 👋</h1>
+                            <p class="text-slate-500 font-medium tracking-tight">Your workspace is running smoothly today.</p>
                         </div>
                         <button onclick="openModal()"
                             class="bg-[#E96A2C] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-xl shadow-orange-500/30 active:scale-95 transition-all text-sm uppercase tracking-widest">
                             <span class="material-icons-round">add_task</span>
-                            Dispatch New Task
+                            Create New Task
                         </button>
                     </div>
 
@@ -267,9 +304,9 @@
                                     class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full">+12%</span>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Pipeline
-                                    Load</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Task Overview</p>
                                 <p class="text-4xl font-bold text-slate-900" id="totalTasksCount">148</p>
+                                <p class="text-[10px] text-slate-400 font-medium">Total tasks in pipeline</p>
                             </div>
                         </div>
                         <div
@@ -284,7 +321,7 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mb-1">
-                                    Completed</p>
+                                    Completed (Weekly)</p>
                                 <p class="text-4xl font-bold text-slate-900">92</p>
                             </div>
                         </div>
@@ -299,8 +336,7 @@
                                     class="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full">Active</span>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-1">In
-                                    Transit</p>
+                                <p class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-1">In Progress</p>
                                 <p class="text-4xl font-bold text-slate-900">34</p>
                             </div>
                         </div>
@@ -315,9 +351,8 @@
                                     class="text-[10px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full">Critical</span>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em] mb-1">Delayed
-                                </p>
-                                <p class="text-4xl font-bold text-slate-900">22</p>
+                                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em] mb-1">Needs Attention</p>
+                                <p class="text-4xl font-bold text-slate-900">Delayed</p>
                             </div>
                         </div>
                     </div>
@@ -327,7 +362,7 @@
                         <div
                             class="lg:col-span-2 bg-white rounded-[2.5rem] card-shadow overflow-hidden border border-slate-100">
                             <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Intelligence Ledger</h3>
+                                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Recent Tasks</h3>
                                 <a href="kanban.html"
                                     class="text-orange-600 text-[10px] font-bold uppercase tracking-widest bg-orange-50 px-4 py-2.5 rounded-xl hover:bg-orange-100 transition-all flex items-center gap-2">
                                     <span class="material-icons-round text-xs">grid_view</span>
@@ -351,7 +386,7 @@
 
                         <div class="bg-white rounded-[2.5rem] card-shadow p-8 border border-slate-100">
                             <div class="flex justify-between items-center mb-10">
-                                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Recent Pulses</h3>
+                                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Recent Activity</h3>
                                 <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                             </div>
                             <div id="activityLog" class="space-y-8">
@@ -361,10 +396,10 @@
                                         <span class="material-icons-round">sync</span>
                                     </div>
                                     <div>
-                                        <p class="text-sm font-bold text-slate-900">System Sync</p>
+                                        <p class="text-sm font-bold text-slate-900">Sync Status</p>
                                         <p class="text-xs text-slate-500 mt-1">Cross-page task persistence active.</p>
                                         <p class="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-[0.2em]">
-                                            Connected</p>
+                                            All systems synced</p>
                                     </div>
                                 </div>
                             </div>
@@ -382,36 +417,32 @@
             class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in-95 duration-300 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
 
-            <h3 class="text-3xl font-bold text-slate-900 mb-8 tracking-tight">New Mission Dispatch</h3>
+            <h3 class="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Create New Task</h3>
             <form onsubmit="handleCreateTask(event)" id="taskForm" class="space-y-8 relative z-10">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Mission
-                        Intelligence</label>
-                    <input type="text" id="taskTitle" placeholder="What needs to be achieved?"
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Task Title</label>
+                    <input type="text" id="taskTitle" placeholder="Describe the task"
                         class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg"
                         required>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Initiative
-                        Focus</label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Project</label>
                     <select id="taskProject"
                         class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold"></select>
                 </div>
                 <div class="grid grid-cols-2 gap-8">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Urgency
-                            Rating</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority</label>
                         <select id="taskPriority"
                             class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
-                            <option value="High">🔴 High Priority</option>
-                            <option value="Medium">🟡 Standard</option>
-                            <option value="Low">🟢 Casual</option>
+                            <option value="High">🔴 High</option>
+                            <option value="Medium">🟡 Medium</option>
+                            <option value="Low">🟢 Low</option>
                         </select>
                     </div>
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Timeline
-                            Target</label>
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Due Date</label>
                         <input type="date" id="taskDue"
                             class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
                     </div>
@@ -421,7 +452,7 @@
                         class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Cancel</button>
                     <button type="submit"
                         class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all text-xs uppercase tracking-widest">
-                        Dispatch Intel
+                        Create Task
                     </button>
                 </div>
             </form>
@@ -486,6 +517,16 @@
             const b = document.getElementById('taskTableBody');
             if (!b) return;
             b.innerHTML = '';
+
+            if (ts.length === 0) {
+                b.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center flex flex-col items-center justify-center gap-4">
+                    <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200">
+                        <span class="material-icons-round text-4xl">inventory_2</span>
+                    </div>
+                    <p class="text-slate-400 font-medium text-sm">Create your first task to get started.</p>
+                </td></tr>`;
+                return;
+            }
 
             // Get last 8 tasks and reverse chronological order
             ts.slice().reverse().slice(0, 8).forEach(t => {
@@ -583,7 +624,7 @@
             await renderRecentTasks();
             closeModal();
             document.getElementById('taskForm').reset();
-            showToast('Dispatch Successful');
+            showToast('Task created successfully.');
         }
     </script>
 </body>
