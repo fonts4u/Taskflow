@@ -17,11 +17,19 @@ const SyncService = {
     },
 
     async init() {
-        if (!window.supabase) return;
+        if (!window.supabase || !window.supabase.auth) {
+            console.error('TaskFlow: Supabase client or auth module missing. Critical failure.');
+            return;
+        }
         this.initPromise = (async () => {
-            const { data: { user } } = await window.supabase.auth.getUser();
-            this.currentUser = user;
-            return user;
+            try {
+                const { data: { user } } = await window.supabase.auth.getUser();
+                this.currentUser = user;
+                return user;
+            } catch (e) {
+                console.error('TaskFlow: Failed to fetch user during init', e);
+                return null;
+            }
         })();
         return this.initPromise;
     },
