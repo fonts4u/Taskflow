@@ -8,6 +8,14 @@ const SyncService = {
     currentUser: null,
     initPromise: null,
 
+    // Robust ID generator
+    generateId() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return 'tf-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+    },
+
     async init() {
         if (!window.supabase) return;
         this.initPromise = (async () => {
@@ -26,34 +34,49 @@ const SyncService = {
     async hasData() {
         await this.ensureInit();
         if (!window.supabase || !this.currentUser) return false;
-        const { count, error } = await window.supabase
-            .from('projects')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', this.currentUser.id);
-        return !error && count > 0;
+        try {
+            const { count, error } = await window.supabase
+                .from('projects')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', this.currentUser.id);
+            return !error && count > 0;
+        } catch (e) {
+            console.error('SyncService: hasData check failed', e);
+            return false;
+        }
     },
 
     // --- PROJECTS ---
     async getProjects() {
         await this.ensureInit();
+        let dbProjects = [];
         if (window.supabase && this.currentUser) {
+            console.log('SyncService: Fetching projects from Supabase...');
             const { data, error } = await window.supabase
                 .from('projects')
                 .select('*')
                 .eq('user_id', this.currentUser.id);
 
             if (!error && data) {
-                // Map DB fields to JS fields
-                return data.map(p => ({
+                console.log(`SyncService: Found ${data.length} projects in DB`);
+                dbProjects = data.map(p => ({
                     ...p,
                     desc: p.description
                 }));
+            } else if (error) {
+                console.error('SyncService: Error fetching projects:', error);
             }
         }
 
-        // Fallback to localStorage
+        // Fallback or Merge
         const local = localStorage.getItem('tf_projects');
-        return local ? JSON.parse(local) : [
+        const localProjects = local ? JSON.parse(local) : [];
+        
+        if (dbProjects.length > 0) return dbProjects;
+        
+        // If DB is empty but we have local data, use local data.
+        // This is important for "just created" items before sync or if tables are fresh.
+        return localProjects.length > 0 ? localProjects : [
             { id: 'p1', name: "Quantum Research", desc: "Tracking developments in superconducting qubits.", progress: 76, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=800" },
             { id: 'p2', name: "Supply Chain", desc: "Redesigning routes for the 2026 peak season.", progress: 42, status: "Active", color: "orange", image_url: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800" }
         ];
@@ -62,27 +85,35 @@ const SyncService = {
     async saveProject(project) {
         await this.ensureInit();
         if (window.supabase && this.currentUser) {
+            console.log('SyncService: Saving project to Supabase...', project.name);
             const { error } = await window.supabase
                 .from('projects')
                 .upsert({
                     id: project.id,
                     name: project.name,
                     description: project.description || project.desc,
-                    progress: project.progress,
-                    status: project.status,
-                    color: project.color,
+                    progress: project.progress || 0,
+                    status: project.status || 'Active',
+                    color: project.color || 'orange',
                     image_url: project.image_url,
                     user_id: this.currentUser.id
                 });
-            if (!error) return;
+            
+            if (error) {
+                console.error('SyncService: Supabase project save failed:', error);
+            } else {
+                console.log('SyncService: Supabase project save successful');
+                // Even on success, we update local storage for perceived speed and offline fallback
+            }
         }
 
-        // Fallback
+        // Local storage update
         const projects = await this.getProjects();
         const index = projects.findIndex(p => p.id === project.id);
         if (index > -1) projects[index] = project;
         else projects.push(project);
         localStorage.setItem('tf_projects', JSON.stringify(projects));
+        console.log('SyncService: Local storage projects updated');
     },
 
     async deleteProject(projectId) {
@@ -121,25 +152,32 @@ const SyncService = {
     // --- TASKS ---
     async getTasks() {
         await this.ensureInit();
+        let dbTasks = [];
         if (window.supabase && this.currentUser) {
+            console.log('SyncService: Fetching tasks from Supabase...');
             const { data, error } = await window.supabase
                 .from('tasks')
                 .select('*')
                 .eq('user_id', this.currentUser.id);
 
             if (!error && data) {
-                // Map DB fields to JS fields
-                return data.map(t => ({
+                console.log(`SyncService: Found ${data.length} tasks in DB`);
+                dbTasks = data.map(t => ({
                     ...t,
                     desc: t.description,
                     column: t.column_id
                 }));
+            } else if (error) {
+                console.error('SyncService: Error fetching tasks:', error);
             }
         }
 
-        // Fallback
+        // Fallback or Merge
         const local = localStorage.getItem('tf_tasks');
-        return local ? JSON.parse(local) : [];
+        const localTasks = local ? JSON.parse(local) : [];
+        
+        if (dbTasks.length > 0) return dbTasks;
+        return localTasks;
     },
 
     async getTaskById(taskId) {
@@ -168,27 +206,45 @@ const SyncService = {
     async saveTask(task) {
         await this.ensureInit();
         if (window.supabase && this.currentUser) {
+            console.log('SyncService: Saving task to Supabase...', task.title);
+            
+            // Try to find project_id from project name if project_id is missing
+            let projectId = task.project_id;
+            if (!projectId && task.project) {
+                const projects = await this.getProjects();
+                const p = projects.find(proj => proj.name === task.project);
+                if (p) projectId = p.id;
+            }
+
             const { error } = await window.supabase
                 .from('tasks')
                 .upsert({
                     id: task.id,
                     title: task.title,
-                    description: task.desc,
-                    priority: task.priority,
+                    description: task.desc || task.description,
+                    priority: task.priority || 'Medium',
                     project: task.project,
-                    column_id: task.column,
-                    status: task.status,
+                    project_id: projectId,
+                    column_id: task.column || 'backlog',
+                    status: task.status || 'Backlog',
+                    due: task.due || task.due_date,
                     user_id: this.currentUser.id
                 });
-            if (!error) return;
+            
+            if (error) {
+                console.error('SyncService: Supabase task save failed:', error);
+            } else {
+                console.log('SyncService: Supabase task save successful');
+            }
         }
 
-        // Fallback
+        // Always update local storage
         const tasks = await this.getTasks();
         const index = tasks.findIndex(t => t.id === task.id);
         if (index > -1) tasks[index] = task;
         else tasks.push(task);
         localStorage.setItem('tf_tasks', JSON.stringify(tasks));
+        console.log('SyncService: Local storage tasks updated');
     },
 
     async deleteTask(taskId) {

@@ -473,7 +473,7 @@
         async function handleCreateProject(e) {
             e.preventDefault();
             const p = {
-                id: crypto.randomUUID(),
+                id: SyncService.generateId(),
                 name: document.getElementById('projName').value,
                 desc: document.getElementById('projDesc').value,
                 progress: 0,

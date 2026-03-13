@@ -641,7 +641,7 @@
 
         async function handleSaveTask(e) {
             e.preventDefault();
-            const id = document.getElementById('taskIdInput').value || crypto.randomUUID();
+            const id = document.getElementById('taskIdInput').value || SyncService.generateId();
             const existingTask = tasks.find(t => t.id === id);
 
             const task = {

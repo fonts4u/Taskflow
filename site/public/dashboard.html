@@ -617,7 +617,7 @@
         async function handleCreateTask(e) {
             e.preventDefault();
             const task = {
-                id: crypto.randomUUID(),
+                id: SyncService.generateId(),
                 title: document.getElementById('taskTitle').value,
                 project: document.getElementById('taskProject').value,
                 priority: document.getElementById('taskPriority').value,
