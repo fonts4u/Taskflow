@@ -39,18 +39,17 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight text-slate-900">
-            The future of work, <br />
-            <span className="text-[#0D9488]">organized.</span>
+            Work, <br />
+            <span className="text-[#E96A2C]">Organized.</span>
           </h1>
 
           <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mb-12 leading-relaxed">
-            Elevate your team's productivity with our glass-morphic interface designed for
-            high-performance workflows and crystal-clear clarity.
+            TaskFlow helps teams plan, track, and deliver projects with clarity.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-6 mb-20 w-full justify-center">
-            <Link href="/signup" className="bg-[#F97316] text-white px-10 py-5 rounded-2xl font-black text-lg w-full sm:w-auto text-center shadow-2xl shadow-orange-500/30 hover:scale-105 transition-all">
-              Get Started for Free
+            <Link href="/signup" className="bg-[#E96A2C] text-white px-10 py-5 rounded-2xl font-black text-lg w-full sm:w-auto text-center shadow-2xl shadow-orange-500/30 hover:scale-105 transition-all">
+              Create Workspace
             </Link>
             <button className="bg-white border-2 border-slate-200 px-10 py-5 rounded-2xl font-black text-lg hover:border-teal-500 transition-all w-full sm:w-auto text-center flex items-center justify-center gap-2">
               <PlayCircle className="w-6 h-6" /> Request Demo
@@ -90,18 +89,18 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
-              { title: 'Kanban Mastery', color: 'teal', desc: 'Beautifully designed drag-and-drop boards that keep your workflow fluid.' },
-              { title: 'Smart Calendar', color: 'blue', desc: 'Never miss a deadline with our intelligent schedule tracking.' },
-              { title: 'Deep Analytics', color: 'orange', desc: 'Visualize your productivity gains with powerful charts.' }
+              { title: 'Kanban Board', color: 'orange', desc: 'Organize tasks and keep work moving.' },
+              { title: 'Timeline', color: 'blue', desc: 'Plan schedules and manage deadlines.' },
+              { title: 'Analytics', color: 'emerald', desc: 'Understand progress with clear metrics.' }
             ].map((f, i) => (
-              <div key={i} className="glass-card p-10 group cursor-pointer hover:bg-white/80 transition-all">
-                <div className={`w-16 h-16 bg-${f.color}-500/10 rounded-2xl flex items-center justify-center text-${f.color}-600 mb-8`}>
+              <div key={i} className="glass-card p-10 group cursor-pointer hover:bg-white/80 transition-all border border-slate-100 rounded-[2.5rem]">
+                <div className={`w-16 h-16 bg-${f.color === 'orange' ? '[#E96A2C]/10' : f.color + '-500/10'} rounded-2xl flex items-center justify-center text-${f.color === 'orange' ? '[#E96A2C]' : f.color + '-600'} mb-8`}>
                   <Zap className="w-8 h-8" />
                 </div>
                 <h3 className="text-2xl font-black mb-4 tracking-tight">{f.title}</h3>
                 <p className="text-slate-600 leading-relaxed mb-6">{f.desc}</p>
-                <div className={`text-${f.color}-600 font-black flex items-center gap-2 group-hover:gap-4 transition-all uppercase tracking-widest text-xs`}>
-                  Explore <ArrowRight className="w-4 h-4" />
+                <div className={`text-${f.color === 'orange' ? '[#E96A2C]' : f.color + '-600'} font-black flex items-center gap-2 group-hover:gap-4 transition-all uppercase tracking-widest text-xs`}>
+                  Learn More <ArrowRight className="w-4 h-4" />
                 </div>
               </div>
             ))}
@@ -124,6 +123,21 @@ export default function LandingPage() {
           <p className="text-sm text-slate-400 font-medium">&copy; 2026 TaskFlow. Rebuilt with Next.js</p>
         </div>
       </footer>
+
+      {/* Floating Shop Button */}
+      <a href="https://blintix.store/" target="_blank" rel="noopener noreferrer"
+        className="fixed bottom-10 right-10 z-[100] bg-[#0F0F0F] text-white rounded-full flex items-center gap-3 px-6 py-3 shadow-2xl hover:scale-105 active:scale-95 transition-all border border-white/10 group">
+        <div className="flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:rotate-12 transition-transform">
+            <path d="M12 2L14.85 8.45L21.5 9.64L16.82 14.55L17.7 21.24L12 18.35L6.3 21.24L7.18 14.55L2.5 9.64L9.15 8.45L12 2Z" fill="#8B5CF6"/>
+            <circle cx="12" cy="12" r="3" fill="#0F0F0F"/>
+          </svg>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium tracking-tight">Blintix</span>
+          <span className="text-sm font-bold tracking-tight">Studio</span>
+        </div>
+      </a>
     </div>
   );
 }
