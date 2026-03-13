@@ -78,13 +78,16 @@ const SyncService = {
 
         // Fallback or Merge
         const local = localStorage.getItem('tf_projects');
-        const localProjects = local ? JSON.parse(local) : [];
         
         if (dbProjects.length > 0) return dbProjects;
         
-        // If DB is empty but we have local data, use local data.
-        // This is important for "just created" items before sync or if tables are fresh.
-        return localProjects.length > 0 ? localProjects : [
+        // If the user has explicitly cleared projects, local will be '[]' (length 0 but not null)
+        // We only show defaults if local is null (first time user)
+        if (local !== null) {
+            return JSON.parse(local);
+        }
+        
+        return [
             { id: 'p1', name: "Quantum Research", desc: "Tracking developments in superconducting qubits.", progress: 76, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=800" },
             { id: 'p2', name: "Supply Chain", desc: "Redesigning routes for the 2026 peak season.", progress: 42, status: "Active", color: "orange", image_url: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800" }
         ];
