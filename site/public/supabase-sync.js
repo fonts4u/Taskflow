@@ -437,8 +437,32 @@ const SyncService = {
     },
 
     async logout() {
+        console.log('TaskFlow: Logout process started');
+        
+        // Hard-clear all local storage keys to ensure auth-guard doesn't bounce back
+        try {
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.includes('sb-') || key.includes('supabase')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            console.log('TaskFlow: Auth keys cleared from localStorage');
+        } catch (e) {
+            console.error('TaskFlow: Failed to clear localStorage', e);
+        }
+
         if (window.supabase) {
-            await window.supabase.auth.signOut();
+            try {
+                // Background signout attempt
+                await window.supabase.auth.signOut();
+                console.log('TaskFlow: signOut successful');
+            } catch (error) {
+                console.error('TaskFlow: signOut error', error);
+            } finally {
+                window.location.href = 'login.html';
+            }
+        } else {
             window.location.href = 'login.html';
         }
     }
