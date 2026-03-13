@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar | TaskFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-soft: rgba(233, 106, 44, 0.1);
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            box-shadow: inset -4px 0 0 var(--primary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .day-cell {
+            min-height: 140px;
+            background: white;
+            padding: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .day-cell:hover {
+            background: rgba(250, 250, 250, 0.8);
+            z-index: 10;
+            box-shadow: inset 0 0 0 1px var(--primary-soft);
+        }
+
+        .day-today {
+            background: #FFF7F3;
+            box-shadow: inset 0 0 0 2px #E96A2C;
+        }
+
+        .event-modal-content {
+            background: white;
+            border-radius: 3rem;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+
+        .profile-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: calc(100% - 10px);
+            min-width: 260px;
+            padding-top: 20px;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            pointer-events: none;
+        }
+
+        .profile-dropdown:hover .dropdown-content {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .dropdown-inner {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        @keyframes dropdownFade {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] text-[#0F172A] overflow-hidden">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-glass flex flex-col z-20">
+            <div class="p-8 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span
+                    class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C]">Pro</span>
+            </div>
+            <nav class="flex-1 mt-6 px-4 space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="projects.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">folder</span>
+                    Projects
+                </a>
+                <a href="kanban.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">view_kanban</span>
+                    Kanban
+                </a>
+                <a href="calendar.html"
+                    class="nav-active flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all group">
+                    <span class="material-icons-round text-[20px]">calendar_month</span>
+                    Calendar
+                </a>
+                <a href="analytics.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">bar_chart</span>
+                    Analytics
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">settings</span>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#FAFAFA]">
+            <header class="h-20 header-glass flex items-center justify-between px-10 z-10 shrink-0">
+                <div class="flex items-center gap-8">
+                    <h2 id="calendarTitle"
+                        class="text-2xl font-bold tracking-tight text-slate-900 font-display min-w-[200px]">February
+                        2026</h2>
+                    <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                        <button onclick="prevMonth()"
+                            class="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-slate-400 hover:text-orange-500">
+                            <span class="material-icons-round">chevron_left</span>
+                        </button>
+                        <button onclick="nextMonth()"
+                            class="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-slate-400 hover:text-orange-500">
+                            <span class="material-icons-round">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <button onclick="handleSeedDemo()" id="seedDemoBtn"
+                        class="flex items-center gap-2 bg-white px-5 py-3 rounded-2xl text-[10px] font-bold text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all uppercase tracking-widest">
+                        <span class="material-icons-round text-lg text-orange-500">auto_awesome</span>
+                        Load Sample Data
+                    </button>
+                    <button onclick="openEventModal()"
+                        class="bg-[#E96A2C] text-white px-8 py-3.5 rounded-2xl font-bold text-xs shadow-2xl shadow-orange-500/20 active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-icons-round text-lg">add_circle</span>
+                        New Event
+                    </button>
+                    <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
+                        <div class="profile-dropdown">
+                            <div class="flex items-center gap-4 ml-4 group cursor-pointer">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                        Johnson</p>
+                                    <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                        Systems
+                                        Lead</p>
+                                </div>
+                                <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                    class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                    alt="User">
+                            </div>
+                            <div class="dropdown-content">
+                                <div class="dropdown-inner">
+                                    <a href="settings.html"
+                                        class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
+                                        <span class="material-icons-round text-lg">settings</span>
+                                        Settings
+                                    </a>
+                                    <div class="h-px bg-slate-50 mx-4"></div>
+                                    <button onclick="SyncService.logout()"
+                                        class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
+                                        <span class="material-icons-round text-lg">logout</span>
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-hidden p-10 flex flex-col">
+                <div
+                    class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 flex-1 flex flex-col overflow-hidden">
+                    <!-- Days of Week -->
+                    <div class="grid grid-cols-7 bg-slate-50 border-b border-slate-100 py-6">
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Sun
+                        </div>
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Mon
+                        </div>
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Tue
+                        </div>
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Wed
+                        </div>
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Thu
+                        </div>
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Fri
+                        </div>
+                        <div class="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Sat
+                        </div>
+                    </div>
+                    <!-- Grid -->
+                    <div id="calendarGrid" class="flex-1 calendar-grid overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
+
+    <!-- Event Modal -->
+    <div id="eventModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[150] hidden flex items-center justify-center p-6">
+        <div class="event-modal-content w-full max-w-lg overflow-hidden relative p-10 transform scale-95 opacity-0 transition-all duration-300"
+            id="modalContent">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-10">
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900 font-display">Add Task</h2>
+                    <button onclick="closeEventModal()"
+                        class="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-400">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+                <form id="eventForm" class="space-y-8">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Task Title</label>
+                        <input type="text" id="eventTitle" required placeholder="Describe the task"
+                            class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Due Date</label>
+                            <input type="date" id="eventDate" required
+                                class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority</label>
+                            <select id="eventColor"
+                                class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                                <option value="orange">🟠 Medium</option>
+                                <option value="rose">🔴 High</option>
+                                <option value="teal">🟢 Low</option>
+                                <option value="indigo">🔵 Strategic</option>
+                                <option value="amber">🟡 Casual</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                        <textarea id="eventDescription" placeholder="Add details or context" rows="3"
+                            class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm resize-none"></textarea>
+                    </div>
+                    <div class="pt-4">
+                        <button type="submit"
+                            class="w-full px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">Add Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        let currentDate = new Date();
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex bg-white items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[320px] transition-all duration-500 transform translate-y-20 opacity-0`;
+
+            const colorClass = isError ? 'text-rose-500' : 'text-emerald-500';
+            const icon = isError ? 'report_problem' : 'verified';
+
+            toast.innerHTML = `
+                <div class="w-10 h-10 ${isError ? 'bg-rose-50' : 'bg-emerald-50'} rounded-xl flex items-center justify-center ${colorClass} shrink-0">
+                    <span class="material-icons-round text-xl">${icon}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 block text-sm">System Pulse</span>
+                    <span class="text-xs text-slate-500">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        async function handleSeedDemo() {
+            if (confirm('Load sample project and task data into your workspace?')) {
+                showToast('Loading sample projects and tasks... Please wait.');
+                await SyncService.seedDummyData();
+                showToast('Sample data loaded successfully.');
+                setTimeout(() => location.reload(), 1000);
+            }
+        }
+
+        async function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const title = document.getElementById('calendarTitle');
+            const tasks = await SyncService.getTasks();
+            const events = await SyncService.getEvents();
+            grid.innerHTML = '';
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            title.innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentDate);
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Previous month padding
+            const prevMonthDate = new Date(year, month, 0);
+            const prevDays = prevMonthDate.getDate();
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'day-cell bg-slate-50/30 text-[10px] font-bold text-slate-200';
+                cell.innerText = prevDays - i;
+                grid.appendChild(cell);
+            }
+
+            // Current month
+            const today = new Date();
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const cell = document.createElement('div');
+                const isToday = today.getDate() === d && today.getMonth() === month && today.getFullYear() === year;
+                cell.className = `day-cell text-[11px] font-bold ${isToday ? 'day-today' : ''}`;
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="${isToday ? 'text-[#E96A2C]' : 'text-slate-400'}">${d}</span>
+                        ${isToday ? '<span class="w-1.5 h-1.5 rounded-full bg-[#E96A2C]"></span>' : ''}
+                    </div>
+                    <div class="space-y-1.5 min-h-[60px] max-h-[80px] overflow-hidden"></div>
+                `;
+                cell.onclick = () => {
+                    document.getElementById('eventDate').value = dateStr;
+                    openEventModal();
+                };
+
+                const container = cell.querySelector('.space-y-1.5');
+                const dayTasks = tasks.filter(t => t.due === dateStr);
+                const dayEvents = events.filter(e => e.event_date === dateStr);
+
+                // Show Tasks
+                dayTasks.slice(0, 3).forEach(t => {
+                    const color = t.priority === 'High' ? 'rose' : (t.priority === 'Medium' ? 'orange' : 'emerald');
+                    container.innerHTML += `
+                        <div class="text-[9px] bg-${color}-50 text-${color}-600 border border-${color}-100/50 p-1.5 rounded-lg truncate font-bold flex items-center gap-1.5" title="Task: ${t.title}">
+                            <span class="w-1 h-1 rounded-full bg-${color}-500"></span>
+                            ${t.title}
+                        </div>
+                    `;
+                });
+
+                // Show Events
+                dayEvents.slice(0, 2).forEach(e => {
+                    const color = e.color || 'orange';
+                    const colors = color === 'rose' ? 'rose' : (color === 'orange' ? 'orange' : (color === 'emerald' ? 'emerald' : (color === 'indigo' ? 'indigo' : 'amber')));
+                    container.innerHTML += `
+                        <div class="text-[9px] bg-${colors}-50 text-${colors}-600 border border-${colors}-100/50 p-1.5 rounded-lg truncate font-bold flex items-center gap-1.5" title="Event: ${e.title}">
+                            <span class="material-icons-round text-[10px]">event</span>
+                            ${e.title}
+                        </div>
+                    `;
+                });
+
+                if (dayTasks.length + dayEvents.length > 5) {
+                    container.innerHTML += `<div class="text-[8px] font-bold text-slate-300 text-center">+ ${dayTasks.length + dayEvents.length - 5} more</div>`;
+                }
+
+                grid.appendChild(cell);
+            }
+
+            // Next month padding
+            const totalCells = grid.children.length;
+            if (totalCells < 42) {
+                for (let i = 1; i <= 42 - totalCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell bg-slate-50/30 text-[10px] font-bold text-slate-200';
+                    cell.innerText = i;
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function openEventModal() {
+            const modal = document.getElementById('eventModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeEventModal() {
+            const modal = document.getElementById('eventModal');
+            const content = document.getElementById('modalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.getElementById('eventForm').reset();
+            }, 300);
+        }
+
+        document.getElementById('eventForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'Synchronizing...';
+
+            const event = {
+                id: crypto.randomUUID(),
+                title: document.getElementById('eventTitle').value,
+                event_date: document.getElementById('eventDate').value,
+                color: document.getElementById('eventColor').value,
+                description: document.getElementById('eventDescription').value
+            };
+
+            await SyncService.saveEvent(event);
+
+            closeEventModal();
+            showToast('Changes saved.');
+            await renderCalendar();
+
+            btn.disabled = false;
+            btn.innerText = originalText;
+        };
+
+        async function prevMonth() { currentDate.setMonth(currentDate.getMonth() - 1); await renderCalendar(); }
+        async function nextMonth() { currentDate.setMonth(currentDate.getMonth() + 1); await renderCalendar(); }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await SyncService.updateProfileUI();
+
+            if (await SyncService.hasData()) {
+                const seedBtn = document.getElementById('seedDemoBtn');
+                if (seedBtn) seedBtn.classList.add('hidden');
+            }
+
+            await renderCalendar();
+        });
+    </script>
+</body>
+
+</html>

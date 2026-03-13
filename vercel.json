@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/ux-clarity",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!site/public/).*)",
+      "destination": "/site/public/$1"
+    }
+  ]
+}

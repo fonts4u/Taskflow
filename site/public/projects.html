@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Projects | TaskFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-soft: rgba(233, 106, 44, 0.1);
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            box-shadow: inset -4px 0 0 var(--primary);
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 3rem;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .project-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(233, 106, 44, 0.15);
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #F1F5F9;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+
+        .profile-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: calc(100% - 10px);
+            min-width: 260px;
+            padding-top: 20px;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            pointer-events: none;
+        }
+
+        .profile-dropdown:hover .dropdown-content {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .dropdown-inner {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] text-[#0F172A] overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-glass flex flex-col z-20">
+            <div class="p-8 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span
+                    class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C]">Pro</span>
+            </div>
+            <nav class="flex-1 mt-6 px-4 space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="projects.html"
+                    class="nav-active flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all group">
+                    <span class="material-icons-round text-[20px]">folder</span>
+                    Projects
+                </a>
+                <a href="kanban.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">view_kanban</span>
+                    Kanban
+                </a>
+                <a href="calendar.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span
+                        class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">calendar_month</span>
+                    Calendar
+                </a>
+                <a href="analytics.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">bar_chart</span>
+                    Analytics
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">settings</span>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#FAFAFA]">
+            <header class="h-20 header-glass flex items-center justify-between px-10 z-10 shrink-0">
+                <div class="flex items-center gap-4">
+                    <span class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Context</span>
+                    <span class="text-slate-300">/</span>
+                    <span
+                        class="text-slate-900 text-xs font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">Global
+                        Projects</span>
+                </div>
+                <div class="flex items-center gap-8">
+                    <button onclick="handleSeedDemo()" id="seedDemoBtn"
+                        class="flex items-center gap-2 bg-orange-50 text-[#E96A2C] font-bold text-[10px] px-5 py-2.5 rounded-2xl hover:bg-orange-100 transition-all active:scale-95 uppercase tracking-widest"
+                        title="Populate workspace with dummy projects and tasks">
+                        <span class="material-icons-round text-lg">auto_awesome</span>
+                        Seed Intel
+                    </button>
+                    <button onclick="openModal()"
+                        class="bg-[#E96A2C] text-white px-8 py-3.5 rounded-2xl font-bold text-sm shadow-xl shadow-orange-500/30 active:scale-95 transition-all flex items-center gap-2 uppercase tracking-widest">
+                        <span class="material-icons-round">rocket_launch</span>
+                        Launch New
+                    </button>
+                    <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
+                        <div class="profile-dropdown">
+                            <div class="flex items-center gap-4 ml-4 group cursor-pointer">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                        Johnson</p>
+                                    <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                        Systems
+                                        Lead</p>
+                                </div>
+                                <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                    class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                    alt="User">
+                            </div>
+                            <div class="dropdown-content">
+                                <div class="dropdown-inner">
+                                    <a href="settings.html"
+                                        class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
+                                        <span class="material-icons-round text-lg">settings</span>
+                                        Settings
+                                    </a>
+                                    <div class="h-px bg-slate-50 mx-4"></div>
+                                    <button onclick="SyncService.logout()"
+                                        class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
+                                        <span class="material-icons-round text-lg">logout</span>
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex justify-between items-end mb-16">
+                        <div>
+                            <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-4">Your Projects</h1>
+                            <p class="text-slate-500 font-medium tracking-tight">Manage and track your project progress.</p>
+                        </div>
+                    </div>
+
+                    <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 pb-12">
+                        <!-- Populated by JS -->
+                        <button onclick="openModal()" id="addProjectBtn"
+                            class="border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-16 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/20 transition-all group">
+                            <div
+                                class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-8 group-hover:bg-orange-50 group-hover:text-orange-600 transition-all">
+                                <span class="material-icons-round text-3xl">add</span>
+                            </div>
+                            <span class="font-bold text-xs uppercase tracking-[0.2em]">Add Project</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="projectModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+        <div
+            class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-12 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+            <h3 class="text-3xl font-bold text-slate-900 mb-10 tracking-tight">Create New Project</h3>
+            <form onsubmit="handleCreateProject(event)" id="projectForm" class="space-y-8 relative z-10">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Project Name</label>
+                    <input type="text" id="projName" placeholder="Project name"
+                        class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                    <textarea id="projDesc" rows="3" placeholder="Contextual brief..."
+                        class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-medium text-sm"></textarea>
+                </div>
+                <div class="pt-6 flex gap-4">
+                    <button type="button" onclick="closeModal()"
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Cancel</button>
+                    <button type="submit"
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all uppercase tracking-widest text-xs">
+                        Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteModal"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl p-10 text-center animate-in zoom-in-95">
+            <div
+                class="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8 transform -rotate-12 group hover:rotate-0 transition-all duration-500">
+                <span class="material-icons-round text-4xl">delete_sweep</span>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Delete Project?</h3>
+            <p class="text-slate-500 mb-10 text-sm leading-relaxed font-medium">This action cannot be undone. All tasks in this project 
+                will be permanently removed.</p>
+            <div class="flex gap-4">
+                <button onclick="closeDeleteModal()"
+                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all text-xs uppercase tracking-widest">Cancel</button>
+                <button onclick="confirmRemoveProject()"
+                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-white bg-rose-500 shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all text-xs uppercase tracking-widest">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        async function getProjects() { return await SyncService.getProjects(); }
+
+        let projects = [];
+        let projectToRemoveId = null;
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex bg-white items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[320px] transition-all duration-500 transform translate-y-20 opacity-0`;
+
+            const colorClass = isError ? 'text-rose-500' : 'text-[#E96A2C]';
+            const icon = isError ? 'report_problem' : 'verified';
+
+            toast.innerHTML = `
+                <div class="w-10 h-10 ${isError ? 'bg-rose-50' : 'bg-orange-50'} rounded-xl flex items-center justify-center ${colorClass} shrink-0">
+                    <span class="material-icons-round text-xl">${icon}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 block text-sm">TaskFlow Intelligence</span>
+                    <span class="text-xs text-slate-500">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        function renderProjects() {
+            console.log('Rendering intelligence portfolio...', projects);
+            const grid = document.getElementById('projectGrid');
+            const addButton = document.getElementById('addProjectBtn');
+            
+            if (!grid || !addButton) {
+                console.error('Core UI components missing');
+                return;
+            }
+
+            // Clear existing project cards
+            grid.querySelectorAll('.project-card').forEach(c => c.remove());
+            const emptyState = document.getElementById('emptyStateNotice');
+            if (emptyState) emptyState.remove();
+
+            if (!Array.isArray(projects) || projects.length === 0) {
+                console.log('No active projects detected');
+                const emptyNotice = document.createElement('div');
+                emptyNotice.id = 'emptyStateNotice';
+                emptyNotice.className = 'col-span-full py-32 text-center flex flex-col items-center justify-center';
+                emptyNotice.innerHTML = `
+                    <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-8 text-slate-200">
+                         <span class="material-icons-round text-5xl">folder_off</span>
+                    </div>
+                    <p class="font-bold text-xs uppercase tracking-[0.2em] text-slate-400">Workspace Clear. Create your first project to get started.</p>
+                `;
+                grid.insertAdjacentElement('afterbegin', emptyNotice);
+                return;
+            }
+
+            // Render project cards
+            projects.forEach(p => {
+                if (!p) return;
+                const isArchived = (p.status === 'Archived');
+                const card = document.createElement('div');
+                card.className = `project-card flex flex-col ${isArchived ? 'opacity-50 grayscale' : ''} overflow-hidden`;
+                
+                const accentColor = p.color === 'teal' ? '#0D9488' : '#E96A2C';
+                const accentBg = p.color === 'teal' ? 'bg-teal-50 text-teal-600' : 'bg-orange-50 text-[#E96A2C]';
+
+                card.innerHTML = `
+                    ${p.image_url ? `<img src="${p.image_url}" class="w-full h-56 object-cover" alt="${p.name}">` : ''}
+                    <div class="p-10 flex flex-col flex-1">
+                        <div class="flex justify-between items-start mb-8">
+                            <div class="w-16 h-16 ${accentBg} rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-sm border border-black/5">
+                                <span class="material-icons-round text-3xl">work_outline</span>
+                            </div>
+                            <div class="flex gap-2">
+                                 <button onclick="toggleArchive('${p.id}')" class="text-slate-400 hover:text-slate-900 transition-all p-3 bg-slate-50 rounded-xl hover:bg-slate-100" title="${isArchived ? 'Activate' : 'Archive'}">
+                                    <span class="material-icons-round text-xl">${isArchived ? 'unarchive' : 'archive'}</span>
+                                 </button>
+                                 <button onclick="openDeleteModal('${p.id}')" class="text-slate-400 hover:text-rose-600 transition-all p-3 bg-slate-50 rounded-xl hover:bg-rose-50" title="Delete">
+                                    <span class="material-icons-round text-xl">delete_outline</span>
+                                 </button>
+                            </div>
+                        </div>
+                        <div class="cursor-pointer flex-1 group" onclick="window.location.href='kanban.html?project=${encodeURIComponent(p.name)}'">
+                            <h3 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight group-hover:text-[#E96A2C] transition-colors">${p.name}</h3>
+                            <p class="text-[13px] text-slate-500 font-medium mb-10 leading-relaxed line-clamp-2">${p.desc || 'No description provided.'}</p>
+                            <div class="mt-auto space-y-6">
+                                <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                    <span>Project Progress</span>
+                                    <span class="text-slate-900">${p.progress || 0}%</span>
+                                </div>
+                                <div class="progress-bar"><div class="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(0,0,0,0.1)]" style="width: ${p.progress || 0}%; background-color: ${accentColor};"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                addButton.insertAdjacentElement('beforebegin', card);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await SyncService.updateProfileUI();
+            if (await SyncService.hasData()) {
+                const seedBtn = document.getElementById('seedDemoBtn');
+                if (seedBtn) seedBtn.classList.add('hidden');
+            }
+            projects = await getProjects();
+            await renderProjects();
+        });
+
+        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); }
+        function openDeleteModal(id) { projectToRemoveId = id; document.getElementById('deleteModal').classList.remove('hidden'); }
+        function closeDeleteModal() { projectToRemoveId = null; document.getElementById('deleteModal').classList.add('hidden'); }
+
+        async function handleSeedDemo() {
+            if (confirm('This will populate your workspace with dummy projects and tasks. Continue?')) {
+                showToast('Loading sample data...');
+                await SyncService.seedDummyData();
+                showToast('Sample data loaded successfully.');
+                location.reload();
+            }
+        }
+        async function handleCreateProject(e) {
+            e.preventDefault();
+            const p = {
+                id: crypto.randomUUID(),
+                name: document.getElementById('projName').value,
+                desc: document.getElementById('projDesc').value,
+                progress: 0,
+                status: "Active",
+                color: "orange"
+            };
+            await SyncService.saveProject(p);
+            showToast('Project created successfully');
+            closeModal();
+            document.getElementById('projectForm').reset();
+            setTimeout(() => location.reload(), 800);
+        }
+
+        async function confirmRemoveProject() {
+            if (projectToRemoveId) {
+                await SyncService.deleteProject(projectToRemoveId);
+                showToast('Project deleted successfully.');
+                closeDeleteModal();
+                setTimeout(() => location.reload(), 800);
+            }
+        }
+
+        async function toggleArchive(id) {
+            const p = projects.find(p => p.id === id);
+            if (p) {
+                p.status = p.status === 'Archived' ? 'Active' : 'Archived';
+                await SyncService.saveProject(p);
+                projects = await getProjects();
+                await renderProjects();
+                showToast(p.status === 'Archived' ? 'Project archived' : 'Project reactivated');
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | TaskFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return; // Already logged in, we are good.
+
+            // If we have a hash, wait for Supabase to process it
+            if (window.location.hash.includes('access_token=')) {
+                // Wait for the auth state to change to SIGNED_IN
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return; // Session established!
+                    }
+                });
+
+                // Safety timeout: if after 3 seconds we still have no session, redirect
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+
+            // No session and no hash? Redirect immediately
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-hover: #D05A21;
+            --primary-soft: rgba(233, 106, 44, 0.1);
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+            --text-main: #0F172A;
+            --text-muted: #475569;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            box-shadow: inset -4px 0 0 var(--primary);
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0, 0, 0, 0.02);
+        }
+
+        .card-shadow:hover {
+            box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.06);
+            transform: translateY(-4px);
+            border-color: rgba(233, 106, 44, 0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+
+        .profile-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: calc(100% - 10px);
+            min-width: 260px;
+            padding-top: 20px;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            pointer-events: none;
+        }
+
+        .profile-dropdown:hover .dropdown-content {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .dropdown-inner {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="bg-[#F8FAFC] text-[#134E4A] overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-glass flex flex-col z-20">
+            <div class="p-8 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span
+                    class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C]">Pro</span>
+            </div>
+            <nav class="flex-1 mt-6 px-4 space-y-2">
+                <a href="dashboard.html"
+                    class="nav-active flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all group">
+                    <span class="material-icons-round text-[20px]">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="projects.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">folder</span>
+                    Projects
+                </a>
+                <a href="kanban.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">view_kanban</span>
+                    Kanban
+                </a>
+                <a href="calendar.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span
+                        class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">calendar_month</span>
+                    Calendar
+                </a>
+                <a href="analytics.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">bar_chart</span>
+                    Analytics
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">settings</span>
+                    Settings
+                </a>
+            </nav>
+            <div class="p-6">
+                <div class="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Workspace</p>
+                        <p class="text-lg font-bold mb-4">TaskFlow <span class="text-orange-500">v2.4</span></p>
+                        <button
+                            class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all uppercase tracking-widest">Upgrade</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#FAFAFA]">
+            <header class="h-20 header-glass flex items-center justify-between px-10 z-10 shrink-0">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <span class="material-icons-round text-sm">public</span>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em]">Global Workspace Network</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-8">
+                    <div class="flex bg-slate-100 p-1.5 rounded-2xl transition-all">
+                        <button onclick="handleSeedDemo()" id="seedDemoBtn"
+                            class="flex items-center gap-2 bg-white text-slate-900 font-bold text-[10px] px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 transition-all active:scale-95 uppercase tracking-widest">
+                            <span class="material-icons-round text-xs text-orange-500">auto_awesome</span>
+                            Seed Intel
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
+                        <button onclick="downloadReport()" class="text-slate-400 hover:text-slate-900 transition-all">
+                            <span class="material-icons-round">cloud_download</span>
+                        </button>
+                        <button class="text-slate-400 hover:text-slate-900 transition-all relative">
+                            <span class="material-icons-round">notifications</span>
+                            <span
+                                class="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full border-2 border-white"></span>
+                        </button>
+                        <div class="profile-dropdown">
+                            <div class="flex items-center gap-4 ml-4 group cursor-pointer">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                        Johnson</p>
+                                    <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                        Systems
+                                        Lead</p>
+                                </div>
+                                <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                    class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                    alt="User">
+                            </div>
+                            <div class="dropdown-content">
+                                <div class="dropdown-inner">
+                                    <a href="settings.html"
+                                        class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
+                                        <span class="material-icons-round text-lg">settings</span>
+                                        Settings
+                                    </a>
+                                    <div class="h-px bg-slate-50 mx-4"></div>
+                                    <button onclick="SyncService.logout()"
+                                        class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
+                                        <span class="material-icons-round text-lg">logout</span>
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                <div class="max-w-7xl mx-auto space-y-10">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <h1 class="text-5xl font-bold text-slate-900 mb-2 tracking-tight">Good morning, <span
+                                    id="welcomeName" class="text-orange-500">Alex Johnson</span> 👋</h1>
+                            <p class="text-slate-500 font-medium tracking-tight">Your workspace is running smoothly today.</p>
+                        </div>
+                        <button onclick="openModal()"
+                            class="bg-[#E96A2C] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-xl shadow-orange-500/30 active:scale-95 transition-all text-sm uppercase tracking-widest">
+                            <span class="material-icons-round">add_task</span>
+                            Create New Task
+                        </button>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                        <div
+                            class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 flex flex-col justify-between h-48 group">
+                            <div class="flex justify-between items-start">
+                                <div
+                                    class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                    <span class="material-icons-round">analytics</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full">+12%</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Task Overview</p>
+                                <p class="text-4xl font-bold text-slate-900" id="totalTasksCount">148</p>
+                                <p class="text-[10px] text-slate-400 font-medium">Total tasks in pipeline</p>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 flex flex-col justify-between h-48 group">
+                            <div class="flex justify-between items-start">
+                                <div
+                                    class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                    <span class="material-icons-round">check_circle</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">Weekly</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mb-1">
+                                    Completed (Weekly)</p>
+                                <p class="text-4xl font-bold text-slate-900">92</p>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 flex flex-col justify-between h-48 group">
+                            <div class="flex justify-between items-start">
+                                <div
+                                    class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                    <span class="material-icons-round">local_shipping</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full">Active</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-1">In Progress</p>
+                                <p class="text-4xl font-bold text-slate-900">34</p>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 flex flex-col justify-between h-48 group">
+                            <div class="flex justify-between items-start">
+                                <div
+                                    class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                                    <span class="material-icons-round">warning</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full">Critical</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em] mb-1">Needs Attention</p>
+                                <p class="text-4xl font-bold text-slate-900">Delayed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Task Ledger -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-8">
+                        <div
+                            class="lg:col-span-2 bg-white rounded-[2.5rem] card-shadow overflow-hidden border border-slate-100">
+                            <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Recent Tasks</h3>
+                                <a href="kanban.html"
+                                    class="text-orange-600 text-[10px] font-bold uppercase tracking-widest bg-orange-50 px-4 py-2.5 rounded-xl hover:bg-orange-100 transition-all flex items-center gap-2">
+                                    <span class="material-icons-round text-xs">grid_view</span>
+                                    Full Board
+                                </a>
+                            </div>
+                            <div class="overflow-x-auto px-4 pb-4">
+                                <table class="w-full text-left">
+                                    <thead class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                                        <tr>
+                                            <th class="px-6 py-4">Identity</th>
+                                            <th class="px-6 py-4">Initiative</th>
+                                            <th class="px-6 py-4">State</th>
+                                            <th class="px-6 py-4">Urgency</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="taskTableBody" class="divide-y divide-slate-50"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-[2.5rem] card-shadow p-8 border border-slate-100">
+                            <div class="flex justify-between items-center mb-10">
+                                <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Recent Activity</h3>
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            </div>
+                            <div id="activityLog" class="space-y-8">
+                                <div class="flex gap-4 group">
+                                    <div
+                                        class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-[#E96A2C] group-hover:text-white transition-all shrink-0">
+                                        <span class="material-icons-round">sync</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-900">Sync Status</p>
+                                        <p class="text-xs text-slate-500 mt-1">Cross-page task persistence active.</p>
+                                        <p class="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-[0.2em]">
+                                            All systems synced</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals & Toasts -->
+    <div id="taskModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+        <div
+            class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+            <h3 class="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Create New Task</h3>
+            <form onsubmit="handleCreateTask(event)" id="taskForm" class="space-y-8 relative z-10">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Task Title</label>
+                    <input type="text" id="taskTitle" placeholder="Describe the task"
+                        class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Project</label>
+                    <select id="taskProject"
+                        class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority</label>
+                        <select id="taskPriority"
+                            class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                            <option value="High">🔴 High</option>
+                            <option value="Medium">🟡 Medium</option>
+                            <option value="Low">🟢 Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Due Date</label>
+                        <input type="date" id="taskDue"
+                            class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                    </div>
+                </div>
+                <div class="pt-4 flex gap-4">
+                    <button type="button" onclick="closeModal()"
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Cancel</button>
+                    <button type="submit"
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all text-xs uppercase tracking-widest">
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        async function getProjects() { return await SyncService.getProjects(); }
+        async function getTasks() { return await SyncService.getTasks(); }
+        async function saveTask(task) { await SyncService.saveTask(task); }
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex bg-white items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[320px] transition-all duration-500 transform translate-y-20 opacity-0`;
+
+            const colorClass = isError ? 'text-rose-500' : 'text-emerald-500';
+            const icon = isError ? 'error_outline' : 'verified';
+
+            toast.innerHTML = `
+                <div class="w-10 h-10 ${isError ? 'bg-rose-50' : 'bg-emerald-50'} rounded-xl flex items-center justify-center ${colorClass} shrink-0">
+                    <span class="material-icons-round text-xl">${icon}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 block text-sm">Notification</span>
+                    <span class="text-xs text-slate-500">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            }, 100);
+
+            // Animate Out
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        async function populateProjectDropdown() {
+            const ps = await getProjects();
+            const s = document.getElementById('taskProject');
+            if (s) {
+                s.innerHTML = '';
+                ps.forEach(p => {
+                    s.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+                });
+            }
+        }
+
+        async function renderRecentTasks() {
+            const ts = await getTasks();
+            const b = document.getElementById('taskTableBody');
+            if (!b) return;
+            b.innerHTML = '';
+
+            if (ts.length === 0) {
+                b.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center flex flex-col items-center justify-center gap-4">
+                    <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200">
+                        <span class="material-icons-round text-4xl">inventory_2</span>
+                    </div>
+                    <p class="text-slate-400 font-medium text-sm">Create your first task to get started.</p>
+                </td></tr>`;
+                return;
+            }
+
+            // Get last 8 tasks and reverse chronological order
+            ts.slice().reverse().slice(0, 8).forEach(t => {
+                const color = t.priority === 'High' ? 'rose' : (t.priority === 'Medium' ? 'orange' : 'emerald');
+                const statusColor = t.status === 'Done' ? 'emerald' : 'blue';
+                const statusIcon = t.status === 'Done' ? 'check_circle' : 'hourglass_empty';
+
+                b.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-all cursor-pointer group" onclick="window.location.href='task-detail.html?id=${t.id}'">
+                        <td class="px-6 py-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full bg-slate-200 group-hover:bg-orange-500 transition-all"></div>
+                                <span class="font-bold text-slate-900 text-sm tracking-tight">${t.title}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-6">
+                            <span class="text-[10px] font-bold bg-slate-50 text-slate-500 px-3 py-1.5 rounded-lg uppercase tracking-widest border border-slate-100">${t.project}</span>
+                        </td>
+                        <td class="px-6 py-6">
+                            <div class="flex items-center gap-2">
+                                <span class="material-icons-round text-sm text-${statusColor}-500">${statusIcon}</span>
+                                <span class="text-[10px] font-bold text-${statusColor}-600 uppercase tracking-widest">${t.status}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-6 text-right">
+                            <span class="text-[10px] font-bold text-${color}-600 uppercase tracking-widest bg-${color}-50 px-3 py-1.5 rounded-lg border border-${color}-100/50">${t.priority}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            const c = document.getElementById('totalTasksCount');
+            if (c) c.innerText = ts.length + 148;
+        }
+
+        function downloadReport() {
+            SyncService.getTasks().then(ts => {
+                SyncService.getProjects().then(ps => {
+                    const reportData = {
+                        timestamp: new Date().toISOString(),
+                        summary: { totalTasks: ts.length + 148, activeProjects: ps.length },
+                        tasks: ts
+                    };
+                    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `taskflow-audit-report-${Date.now()}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    showToast('System Audit Report Exported');
+                });
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await SyncService.updateProfileUI();
+
+            // Hide/Show seed button
+            const hasData = await SyncService.hasData();
+            const seedBtn = document.getElementById('seedDemoBtn');
+            if (hasData && seedBtn) {
+                seedBtn.parentElement.classList.add('hidden');
+            }
+
+            await populateProjectDropdown();
+            await renderRecentTasks();
+        });
+
+        function openModal() { document.getElementById('taskModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+        async function handleSeedDemo() {
+            if (confirm('This will populate your workspace with dummy projects and tasks. Continue?')) {
+                showToast('Injecting Data... Please wait.');
+                await SyncService.seedDummyData();
+                showToast('Intelligence Base Seeded Successfully');
+                setTimeout(() => location.reload(), 1000);
+            }
+        }
+
+        async function handleCreateTask(e) {
+            e.preventDefault();
+            const task = {
+                id: crypto.randomUUID(),
+                title: document.getElementById('taskTitle').value,
+                project: document.getElementById('taskProject').value,
+                priority: document.getElementById('taskPriority').value,
+                due: document.getElementById('taskDue').value || new Date().toISOString().split('T')[0],
+                column: 'backlog',
+                status: 'Backlog'
+            };
+            await saveTask(task);
+            await renderRecentTasks();
+            closeModal();
+            document.getElementById('taskForm').reset();
+            showToast('Task created successfully.');
+        }
+    </script>
+</body>
+
+</html>

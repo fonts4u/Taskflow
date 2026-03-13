@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace Board | TaskFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // Auth Guard: Redirect to login if no session exists or is being established
+        async function authGuard() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) return;
+            if (window.location.hash.includes('access_token=')) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                });
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) window.location.href = 'login.html';
+                    subscription.unsubscribe();
+                }, 3000);
+                return;
+            }
+            window.location.href = 'login.html';
+        }
+        authGuard();
+
+        // Listen for signed out event
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    <style>
+        :root {
+            --primary: #E96A2C;
+            --primary-soft: rgba(233, 106, 44, 0.1);
+            --surface: #FFFFFF;
+            --background: #FAFAFA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-display {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .header-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            box-shadow: inset -4px 0 0 var(--primary);
+        }
+
+        .column-bg {
+            background: rgba(241, 245, 249, 0.4);
+            border-radius: 2.5rem;
+            min-width: 340px;
+            border: 1px solid rgba(0, 0, 0, 0.01);
+        }
+
+        .task-card {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.03);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 2rem;
+        }
+
+        .task-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+            border-color: rgba(233, 106, 44, 0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+
+        .profile-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            right: 0;
+            top: calc(100% - 10px);
+            min-width: 260px;
+            padding-top: 20px;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            pointer-events: none;
+        }
+
+        .profile-dropdown:hover .dropdown-content {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .dropdown-inner {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAFAFA] text-[#0F172A] overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-glass flex flex-col z-20 transition-all">
+            <div class="p-8 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <span class="material-icons-round">bolt</span>
+                </div>
+                <span
+                    class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C]">Pro</span>
+            </div>
+            <nav class="flex-1 mt-6 px-4 space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="projects.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">folder</span>
+                    Projects
+                </a>
+                <a href="kanban.html"
+                    class="nav-active flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all group">
+                    <span class="material-icons-round text-[20px]">view_kanban</span>
+                    Kanban
+                </a>
+                <a href="calendar.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span
+                        class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">calendar_month</span>
+                    Calendar
+                </a>
+                <a href="analytics.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">bar_chart</span>
+                    Analytics
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">settings</span>
+                    Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#FAFAFA]">
+            <header class="h-20 header-glass flex items-center justify-between px-10 z-10 shrink-0">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-4">
+                        <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Context</label>
+                        <select id="projectFilter" onchange="filterTasks()"
+                            class="bg-slate-100/50 border-none rounded-2xl px-6 py-2.5 text-xs font-bold text-slate-700 outline-none focus:ring-4 focus:ring-orange-500/10 transition-all cursor-pointer">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-4 pl-8 border-l border-slate-200">
+                        <div class="profile-dropdown">
+                            <div class="flex items-center gap-4 ml-4 group cursor-pointer">
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-slate-900 leading-none" id="navProfileName">Alex
+                                        Johnson</p>
+                                    <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                        Systems
+                                        Lead</p>
+                                </div>
+                                <img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=E96A2C&color=fff"
+                                    class="w-11 h-11 rounded-2xl shadow-xl shadow-orange-500/10 group-hover:scale-105 transition-all"
+                                    alt="User">
+                            </div>
+                            <div class="dropdown-content">
+                                <div class="dropdown-inner">
+                                    <a href="settings.html"
+                                        class="flex items-center gap-3 px-6 py-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-all">
+                                        <span class="material-icons-round text-lg">settings</span>
+                                        Settings
+                                    </a>
+                                    <div class="h-px bg-slate-50 mx-4"></div>
+                                    <button onclick="SyncService.logout()"
+                                        class="w-full flex items-center gap-3 px-6 py-4 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all">
+                                        <span class="material-icons-round text-lg">logout</span>
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 p-10 overflow-hidden flex flex-col">
+                <div class="flex justify-between items-end mb-10 shrink-0">
+                    <div>
+                        <h1 id="boardTitle" class="text-5xl font-bold text-slate-900 tracking-tight leading-none mb-2">
+                            Workspace Board</h1>
+                        <p class="text-slate-500 font-medium tracking-tight">Organize tasks and keep your projects moving.</p>
+                    </div>
+                    <button onclick="openCreateModal()"
+                        class="bg-[#E96A2C] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-xl shadow-orange-500/30 active:scale-95 transition-all text-sm uppercase tracking-widest">
+                        <span class="material-icons-round">add</span>
+                        New Task
+                    </button>
+                </div>
+
+                <div id="board" class="flex-1 flex gap-8 overflow-x-auto pb-6 custom-scrollbar">
+                    <!-- Default Columns -->
+                    <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="backlog"
+                        ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <div class="flex justify-between items-center mb-2 px-2">
+                            <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                                <span class="w-3 h-3 rounded-full bg-slate-300"></span>
+                                Backlog
+                            </h3>
+                            <span
+                                class="column-count text-slate-400 text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm">0</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-medium px-2 mb-6 uppercase tracking-wider">Planned work and upcoming tasks.</p>
+                        <div
+                            class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1">
+                        </div>
+                    </div>
+
+                    <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="in-progress"
+                        ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <div class="flex justify-between items-center mb-2 px-2">
+                            <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                In Progress
+                            </h3>
+                            <span
+                                class="column-count text-blue-500 text-[10px] font-bold bg-blue-50 px-3 py-1 rounded-full shadow-sm">0</span>
+                        </div>
+                        <p class="text-[10px] text-blue-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks currently being worked on.</p>
+                        <div
+                            class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1">
+                        </div>
+                    </div>
+
+                    <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="on-hold"
+                        ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <div class="flex justify-between items-center mb-2 px-2">
+                            <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                                <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                                Review
+                            </h3>
+                            <span
+                                class="column-count text-orange-500 text-[10px] font-bold bg-orange-50 px-3 py-1 rounded-full shadow-sm">0</span>
+                        </div>
+                        <p class="text-[10px] text-orange-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks awaiting feedback or approval.</p>
+                        <div
+                            class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1">
+                        </div>
+                    </div>
+
+                    <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="completed"
+                        ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <div class="flex justify-between items-center mb-2 px-2">
+                            <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                Done
+                            </h3>
+                            <span
+                                class="column-count text-emerald-500 text-[10px] font-bold bg-emerald-50 px-3 py-1 rounded-full shadow-sm">0</span>
+                        </div>
+                        <p class="text-[10px] text-emerald-400 font-medium px-2 mb-6 uppercase tracking-wider">Completed work.</p>
+                        <div
+                            class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1">
+                        </div>
+                    </div>
+
+                    <button onclick="openColumnModal()"
+                        class="w-[340px] shrink-0 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/20 transition-all group">
+                        <div
+                            class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center group-hover:bg-orange-50 group-hover:text-orange-600 transition-all">
+                            <span class="material-icons-round text-2xl">add</span>
+                        </div>
+                        <span class="font-bold text-xs uppercase tracking-widest">Add Column</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="taskModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+        <div
+            class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+            <h3 id="modalTitle" class="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Create New Task</h3>
+            <form id="taskForm" onsubmit="handleSaveTask(event)" class="space-y-8 relative z-10">
+                <input type="hidden" id="taskIdInput">
+                <div>
+                    <label
+                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Task Title</label>
+                    <input type="text" id="titleInput" placeholder="Describe the task"
+                        class="w-full px-6 py-5 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                    <input type="text" id="descInput" placeholder="Add details or context"
+                        class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Project</label>
+                        <select id="projSelect"
+                            class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold"></select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Priority</label>
+                        <select id="priorityInput"
+                            class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                            <option value="High">🔴 High</option>
+                            <option value="Medium">🟡 Medium</option>
+                            <option value="Low">🟢 Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pt-4 flex gap-4">
+                    <button type="button" onclick="closeModal()"
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Cancel</button>
+                    <button type="submit"
+                        class="flex-1 px-6 py-5 rounded-2xl font-bold text-white bg-[#E96A2C] shadow-2xl shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition-all text-xs uppercase tracking-widest">
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl p-10 text-center animate-in zoom-in-95">
+            <div
+                class="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8 transform -rotate-12 group hover:rotate-0 transition-all duration-500">
+                <span class="material-icons-round text-4xl">delete_sweep</span>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Delete Task?</h3>
+            <p class="text-slate-500 mb-10 text-sm leading-relaxed font-medium">This action cannot be undone. The task
+                will be permanently removed.</p>
+            <div class="flex gap-4">
+                <button onclick="closeDeleteModal()"
+                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-all text-xs uppercase tracking-widest">Cancel</button>
+                <button onclick="confirmTaskDeletion()"
+                    class="flex-1 px-6 py-4 rounded-2xl font-bold text-white bg-rose-500 shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all text-xs uppercase tracking-widest">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        async function getProjects() { return await SyncService.getProjects(); }
+        async function getTasks() { return await SyncService.getTasks(); }
+
+        let tasks = [];
+        let taskToDelete = null;
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `flex bg-white items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[320px] transition-all duration-500 transform translate-y-20 opacity-0`;
+
+            const colorClass = isError ? 'text-rose-500' : 'text-emerald-500';
+            const icon = isError ? 'error_outline' : 'verified';
+
+            toast.innerHTML = `
+                <div class="w-10 h-10 ${isError ? 'bg-rose-50' : 'bg-emerald-50'} rounded-xl flex items-center justify-center ${colorClass} shrink-0">
+                    <span class="material-icons-round text-xl">${icon}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 block text-sm">Sync Status</span>
+                    <span class="text-xs text-slate-500">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        function openDeleteModal(id) { taskToDelete = id; document.getElementById('deleteModal').classList.remove('hidden'); }
+        function closeDeleteModal() { taskToDelete = null; document.getElementById('deleteModal').classList.add('hidden'); }
+        async function confirmTaskDeletion() {
+            if (taskToDelete) {
+                await SyncService.deleteTask(taskToDelete);
+                await renderTasks();
+                closeDeleteModal();
+                showToast('Task deleted successfully');
+            }
+        }
+
+        async function populateProjectDropdowns() {
+            const projects = await getProjects();
+            const filter = document.getElementById('projectFilter');
+            const modalS = document.getElementById('projSelect');
+            if (filter) filter.innerHTML = '<option value="All">All Projects</option>';
+            if (modalS) modalS.innerHTML = '';
+            projects.forEach(p => {
+                if (filter) filter.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+                if (modalS) modalS.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+            });
+        }
+
+        const originalBoardHTML = `
+            <div class="columns-wrapper flex gap-8">
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="backlog" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                            <span class="w-3 h-3 rounded-full bg-slate-300"></span>
+                            Backlog
+                        </h3>
+                        <span class="column-count text-slate-400 text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm">0</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 font-medium px-2 mb-6 uppercase tracking-wider">Planned work and upcoming tasks.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                </div>
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                            In Progress
+                        </h3>
+                        <span class="column-count text-blue-500 text-[10px] font-bold bg-blue-50 px-3 py-1 rounded-full shadow-sm">0</span>
+                    </div>
+                    <p class="text-[10px] text-blue-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks currently being worked on.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                </div>
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="review" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                            <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                            Needs Attention
+                        </h3>
+                        <span class="column-count text-orange-500 text-[10px] font-bold bg-orange-50 px-3 py-1 rounded-full shadow-sm">0</span>
+                    </div>
+                    <p class="text-[10px] text-orange-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks requiring immediate focus.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                </div>
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            Completed
+                        </h3>
+                        <span class="column-count text-emerald-500 text-[10px] font-bold bg-emerald-50 px-3 py-1 rounded-full shadow-sm">0</span>
+                    </div>
+                    <p class="text-[10px] text-emerald-400 font-medium px-2 mb-6 uppercase tracking-wider">Finished and verified items.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                </div>
+            </div>
+        `;
+
+        async function renderTasks() {
+            tasks = await getTasks();
+            const filter = document.getElementById('projectFilter').value;
+            const filtered = filter === 'All' ? tasks : tasks.filter(t => t.project === filter);
+
+            const board = document.getElementById('board');
+            
+            if (filtered.length === 0) {
+                board.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center py-32 opacity-60">
+                         <div class="w-24 h-24 bg-slate-100 rounded-[2.5rem] flex items-center justify-center mb-8 text-slate-300">
+                             <span class="material-icons-round text-5xl">auto_awesome_motion</span>
+                         </div>
+                         <h3 class="text-2xl font-bold text-slate-900 mb-2">Workspace Clear</h3>
+                         <p class="text-slate-500 font-medium">Create your first task to get started.</p>
+                         <button onclick="openCreateModal()" class="mt-8 bg-[#E96A2C] text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-orange-500/20 active:scale-95 transition-all text-xs uppercase tracking-widest flex items-center gap-2">
+                             <span class="material-icons-round">add</span>
+                             New Task
+                         </button>
+                    </div>`;
+                return;
+            }
+
+            // Ensure columns are present
+            board.innerHTML = originalBoardHTML;
+
+            // Render tasks
+            filtered.forEach(t => {
+                const color = t.priority === 'High' ? 'rose' : (t.priority === 'Medium' ? 'orange' : 'emerald');
+                const html = `
+                    <div id="${t.id}" class="task-card p-6 rounded-[2.5rem] relative group cursor-grab active:cursor-grabbing" draggable="true" ondragstart="drag(event)">
+                        <div class="flex justify-between items-start mb-4">
+                             <div class="flex items-center gap-2">
+                                 <div class="w-2 h-2 rounded-full bg-${color}-500 shadow-sm shadow-${color}-500/50"></div>
+                                 <span class="text-[10px] font-bold text-${color}-600 uppercase tracking-widest">${t.priority}</span>
+                             </div>
+                             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                 <button onclick="openEditModal('${t.id}')" class="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-orange-500 transition-all">
+                                     <span class="material-icons-round text-lg">edit</span>
+                                 </button>
+                                 <button onclick="openDeleteModal('${t.id}')" class="p-2 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-500 transition-all">
+                                     <span class="material-icons-round text-lg">delete</span>
+                                 </button>
+                             </div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 tracking-tight leading-relaxed mb-4 cursor-pointer hover:text-orange-600 transition-colors" onclick="window.location.href='task-detail.html?id=${t.id}'">
+                            ${t.title}
+                        </h4>
+                        <div class="flex justify-between items-center pt-4 border-t border-slate-50">
+                            <span class="text-[9px] font-bold bg-slate-50 text-slate-400 px-2.5 py-1.5 rounded-lg uppercase tracking-widest border border-slate-100">
+                                ${t.project}
+                            </span>
+                            <div class="flex -space-x-2">
+                                <img src="https://ui-avatars.com/api/?name=User&background=E2E8F0&color=94A3B8" class="w-7 h-7 rounded-full border-2 border-white shadow-sm" alt="">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                const container = document.querySelector(`[data-column="${t.column}"] .tasks-container`);
+                if (container) container.insertAdjacentHTML('beforeend', html);
+            });
+
+            document.querySelectorAll('[data-column]').forEach(col => {
+                const count = col.querySelectorAll('.task-card').length;
+                col.querySelector('.column-count').innerText = count;
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await SyncService.updateProfileUI();
+            await populateProjectDropdowns();
+            const urlParams = new URLSearchParams(window.location.search);
+            const pName = urlParams.get('project');
+            if (pName) {
+                document.getElementById('projectFilter').value = decodeURIComponent(pName);
+                document.getElementById('boardTitle').innerText = decodeURIComponent(pName);
+            }
+            await renderTasks();
+        });
+
+        async function filterTasks() {
+            const filter = document.getElementById('projectFilter').value;
+            document.getElementById('boardTitle').innerText = filter === 'All' ? 'Workspace Board' : filter;
+            await renderTasks();
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').innerText = 'Create New Task';
+            document.getElementById('taskIdInput').value = '';
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function openEditModal(id) {
+            const t = tasks.find(t => t.id === id);
+            if (!t) return;
+            document.getElementById('modalTitle').innerText = 'Edit Task';
+            document.getElementById('taskIdInput').value = t.id;
+            document.getElementById('titleInput').value = t.title;
+            document.getElementById('projSelect').value = t.project;
+            document.getElementById('priorityInput').value = t.priority;
+            document.getElementById('descInput').value = t.desc || '';
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+        async function handleSaveTask(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskIdInput').value || crypto.randomUUID();
+            const existingTask = tasks.find(t => t.id === id);
+
+            const task = {
+                id: id,
+                title: document.getElementById('titleInput').value,
+                desc: document.getElementById('descInput').value,
+                project: document.getElementById('projSelect').value,
+                priority: document.getElementById('priorityInput').value,
+                column: existingTask ? existingTask.column : 'backlog',
+                status: existingTask ? existingTask.status : 'Backlog'
+            };
+
+            await SyncService.saveTask(task);
+            closeModal();
+            await renderTasks();
+            showToast(existingTask ? 'Changes saved.' : 'Task created successfully.');
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        async function drop(ev) {
+            ev.preventDefault();
+            const draggedId = ev.dataTransfer.getData("text");
+            const dropTarget = ev.target.closest('[data-column]');
+            if (dropTarget) {
+                const t = tasks.find(t => t.id === draggedId);
+                if (t) {
+                    t.column = dropTarget.getAttribute('data-column');
+                    t.status = dropTarget.querySelector('h3').innerText.trim();
+                    await SyncService.saveTask(t);
+                }
+                await renderTasks();
+            }
+        }
+
+        function openColumnModal() { alert('Column customization coming soon in v2.0'); }
+    </script>
+</body>
+
+</html>

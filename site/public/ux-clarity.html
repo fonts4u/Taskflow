@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>UX Clarity &amp; Advisory Sprint</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#E96A2C", // Burnt Orange
+                        "primary-hover": "#D05A21",
+                        "background-light": "#FAFAFA", // Warm White
+                        "background-dark": "#121212",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E1E1E",
+                        "text-slate": "#334155",
+                        "text-slate-dark": "#CBD5E1",
+                        "accent-light": "#FDE8DE", // Light orange tint
+                        "accent-dark": "#33241F",
+                    },
+                    fontFamily: {
+                        display: ['"Plus Jakarta Sans"', "sans-serif"],
+                        body: ['"Inter"', "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem",
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'hover': '0 10px 25px -5px rgba(233, 106, 44, 0.15)',
+                    }
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .floating-pill {
+            animation: float 6s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        .floating-pill:nth-child(2) {
+            animation-delay: 1s;
+        }
+
+        .floating-pill:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        .floating-pill:nth-child(4) {
+            animation-delay: 3s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* Scroll Animation Styles */
+        .scroll-animate {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .scroll-animate.animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scroll-animate-delay-1 {
+            transition-delay: 0.1s;
+        }
+
+        .scroll-animate-delay-2 {
+            transition-delay: 0.2s;
+        }
+
+        .scroll-animate-delay-3 {
+            transition-delay: 0.3s;
+        }
+
+        .scroll-animate-delay-4 {
+            transition-delay: 0.4s;
+        }
+
+        .scroll-animate-delay-5 {
+            transition-delay: 0.5s;
+        }
+
+        .scroll-animate-delay-6 {
+            transition-delay: 0.6s;
+        }
+
+        /* Stacking Card Animation */
+        .stack-cards-container {
+            position: relative;
+        }
+
+        .stack-card {
+            position: sticky;
+            transition: all 0.3s ease-out;
+            padding: 50px 0 0 50px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .stack-card:nth-child(1) {
+            top: 180px;
+            z-index: 5;
+            padding: 50px;
+        }
+
+        .stack-card:nth-child(2) {
+            top: 210px;
+            z-index: 4;
+            padding: 50px;
+        }
+
+        .stack-card:nth-child(3) {
+            top: 240px;
+            z-index: 3;
+            padding: 50px;
+        }
+
+        .stack-card:nth-child(4) {
+            top: 270px;
+            z-index: 2;
+            padding: 50px;
+        }
+
+        .stack-card:nth-child(5) {
+            top: 300px;
+            z-index: 1;
+            padding: 50px;
+        }
+
+        .stack-card.is-stacked {
+            transform: scale(0.98);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+    <script>
+        // Scroll Animation Observer
+        document.addEventListener('DOMContentLoaded', function () {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-in');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all elements with scroll-animate class
+            document.querySelectorAll('.scroll-animate').forEach(element => {
+                observer.observe(element);
+            });
+
+            // Stacking Cards Animation
+            const stackCards = document.querySelectorAll('.stack-card');
+
+            window.addEventListener('scroll', () => {
+                stackCards.forEach((card, index) => {
+                    const rect = card.getBoundingClientRect();
+                    const topOffset = 180 + (index * 30);
+
+                    if (rect.top <= topOffset) {
+                        card.classList.add('is-stacked');
+                    } else {
+                        card.classList.remove('is-stacked');
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-text-slate dark:text-text-slate-dark antialiased transition-colors duration-300">
+    <nav
+        class="sticky top-0 z-50 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold font-display text-gray-900 dark:text-white">clarity<span
+                            class="text-primary">.ux</span></span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary font-medium transition"
+                        href="#approach">Approach</a>
+                    <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary font-medium transition"
+                        href="#services">Services</a>
+                    <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary font-medium transition"
+                        href="https://bharatuxd.framer.website/works" target="_blank" rel="noopener noreferrer">Case
+                        Studies</a>
+                </div>
+                <div>
+                    <a class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-full text-white bg-primary hover:bg-primary-hover shadow-lg shadow-orange-500/20 transition-all transform hover:scale-105"
+                        href="https://cal.id/bharatmodi">
+                        Let's Talk
+                        <span class="material-icons-round ml-1 text-base">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <header class="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="max-w-2xl">
+                    <div
+                        class="inline-block px-4 py-1.5 rounded-full bg-accent-light dark:bg-accent-dark text-primary font-semibold text-sm mb-6">
+                        For SaaS Founders &amp; Product Teams
+                    </div>
+                    <h1 class="text-5xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight mb-8">
+                        UX Clarity &amp; <br />
+                        <span class="text-primary">Decision-Making.</span>
+                    </h1>
+                    <p class="text-xl text-gray-600 dark:text-gray-400 mb-10 leading-relaxed">
+                        Stop guessing what to build next. We provide rapid UX advisory sprints to help you unstuck your
+                        product roadmap and improve adoption.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a class="inline-flex justify-center items-center px-8 py-4 border border-transparent text-base font-bold rounded-full text-white bg-primary hover:bg-primary-hover shadow-xl shadow-orange-500/30 transition-all transform hover:-translate-y-1"
+                            href="https://cal.id/bharatmodi">
+                            Book a 15-min intro call
+                            <span class="material-icons-round ml-2">calendar_today</span>
+                        </a>
+                        <a class="inline-flex justify-center items-center px-8 py-4 border border-gray-300 dark:border-gray-700 text-base font-bold rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                            href="#process">
+                            How it works
+                        </a>
+                    </div>
+                </div>
+                <div class="relative h-[400px] hidden lg:block">
+                    <div
+                        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent-light/50 dark:bg-accent-dark/30 rounded-full blur-3xl -z-10">
+                    </div>
+                    <div
+                        class="absolute top-8 right-16 bg-white dark:bg-surface-dark shadow-soft p-4 rounded-xl border border-gray-100 dark:border-gray-800 rotate-3 floating-pill z-[4]">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="material-icons-round text-primary p-2 bg-accent-light dark:bg-accent-dark rounded-lg">psychology</span>
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">Behavioral UX</p>
+                                <p class="text-xs text-gray-500">Why users convert</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="absolute top-16 left-4 bg-white dark:bg-surface-dark shadow-soft p-4 rounded-xl border border-gray-100 dark:border-gray-800 -rotate-2 floating-pill z-[3]">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="material-icons-round text-primary p-2 bg-accent-light dark:bg-accent-dark rounded-lg">rule</span>
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">UX Heuristics</p>
+                                <p class="text-xs text-gray-500">Audit &amp; Fix</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="absolute bottom-16 right-8 bg-white dark:bg-surface-dark shadow-soft p-4 rounded-xl border border-gray-100 dark:border-gray-800 rotate-1 floating-pill z-[2]">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="material-icons-round text-primary p-2 bg-accent-light dark:bg-accent-dark rounded-lg">rocket_launch</span>
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">Onboarding</p>
+                                <p class="text-xs text-gray-500">Activation flow</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="absolute bottom-16 right-65 bg-white dark:bg-surface-dark shadow-soft p-4 rounded-xl border border-gray-100 dark:border-gray-800 -rotate-3 floating-pill z-[1]">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="material-icons-round text-primary p-2 bg-accent-light dark:bg-accent-dark rounded-lg">assignment</span>
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">PM Outputs</p>
+                                <p class="text-xs text-gray-500">Specs &amp; Wireframes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Approach Section -->
+    <section id="approach" class="py-24 mt-[150px] mb-[150px] bg-background-light dark:bg-background-dark">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-4 scroll-animate">
+                <span
+                    class="inline-block px-4 py-1.5 rounded-full bg-accent-light dark:bg-accent-dark text-primary font-semibold text-sm mb-6">
+                    Steps
+                </span>
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 italic">
+                    We guide you throughout the entire process
+                </h2>
+                <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                    From creative design to technical solutions, our services define industry excellence
+                </p>
+            </div>
+
+            <div class="mt-16 space-y-4 stack-cards-container">
+                <!-- Research -->
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-6 border-l-4 border-blue-400 dark:border-blue-600 shadow-sm hover:shadow-md transition-all stack-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <span class="material-icons-round text-blue-600 dark:text-blue-400 text-xl">search</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Research</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                We will share a detailed questionnaire to analyze your business in-depth. After that, we
+                                will be able to create a tailor-made design to reach your business goals.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Web design -->
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-6 border-l-4 border-purple-400 dark:border-purple-600 shadow-sm hover:shadow-md transition-all stack-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            <span
+                                class="material-icons-round text-purple-600 dark:text-purple-400 text-xl">palette</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Web design</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                We will design a detailed mockup or prototype of your website and present it to you.
+                                Once aligned with the initial mockup, we will start the revision process to carefully
+                                perfect it.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No-code development -->
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-6 border-l-4 border-orange-400 dark:border-orange-600 shadow-sm hover:shadow-md transition-all stack-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <span class="material-icons-round text-orange-600 dark:text-orange-400 text-xl">code</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">No-code development</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                We develop websites using industry best practices and modern standards, so you have a
+                                perfectly responsive, SEO-friendly, and highly conversion-oriented website experience.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Launch -->
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-6 border-l-4 border-green-400 dark:border-green-600 shadow-sm hover:shadow-md transition-all stack-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <span
+                                class="material-icons-round text-green-600 dark:text-green-400 text-xl">rocket_launch</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Launch</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                When the project is completed, we will schedule a dedicated 2hr session to fully train
+                                your team on using, editing, and taking advantage of your new.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support -->
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-6 border-l-4 border-indigo-400 dark:border-indigo-600 shadow-sm hover:shadow-md transition-all stack-card">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                            <span
+                                class="material-icons-round text-indigo-600 dark:text-indigo-400 text-xl">support_agent</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Support</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                We keep a close, long-term relationship and clear communication with your team, so we
+                                can better support future design or development needs.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 scroll-animate">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">High impact for growing
+                    teams</h2>
+                <p class="text-lg text-gray-600 dark:text-gray-400">We specialize in helping technical founders
+                    translate vision into interface.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div
+                    class="p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 transition-colors group scroll-animate scroll-animate-delay-1">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-accent-light dark:bg-accent-dark flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
+                        <span
+                            class="material-icons-round text-primary group-hover:text-white transition-colors">engineering</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">SaaS Founders</h3>
+                    <p class="text-gray-600 dark:text-gray-400">You have a working product but user churn is high. You
+                        need to identify friction points without hiring a full-time designer.</p>
+                </div>
+                <div
+                    class="p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 transition-colors group scroll-animate scroll-animate-delay-2">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-accent-light dark:bg-accent-dark flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
+                        <span
+                            class="material-icons-round text-primary group-hover:text-white transition-colors">brush</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Design-tool Builders</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Building complex creative tools? We understand canvas
+                        interactions, toolbars, and complex state management.</p>
+                </div>
+                <div
+                    class="p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 transition-colors group scroll-animate scroll-animate-delay-3">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-accent-light dark:bg-accent-dark flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
+                        <span
+                            class="material-icons-round text-primary group-hover:text-white transition-colors">groups</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Early Stage Teams</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Pre-Series A teams that need to move fast. Get senior
+                        design thinking plugged directly into your sprint cycle.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="services"
+        class="py-24 bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-gray-800 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 scroll-animate">
+                <h2 class="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">3 ways we can collaborate
+                </h2>
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Flexible engagement models
+                    designed for where your product is today.</p>
+            </div>
+            <div class="grid lg:grid-cols-3 gap-8 items-start">
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full scroll-animate scroll-animate-delay-1">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Design Iteration</h3>
+                        <p class="text-sm font-medium text-gray-500 mt-2">Full review plus redesigned critical flows</p>
+                    </div>
+                    <div class="flex items-center gap-2 mb-6 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        <span class="material-icons-round text-primary text-base">schedule</span>
+                        2–3 weeks timeline
+                    </div>
+                    <div class="border-t border-gray-100 dark:border-gray-700 pt-6 mb-8 flex-grow">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">What's included</p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Deep-dive UX audit &amp; heuristic evaluation</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Redesign of 3-5 complex user flows</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Clickable high-fidelity prototype</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Detailed developer handoff specs</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button
+                        class="w-full py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white font-bold hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        Book Strategy Call
+                    </button>
+                </div>
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-3xl p-8 border-2 border-primary shadow-xl shadow-orange-500/10 relative transform lg:-translate-y-4 flex flex-col h-full z-10 scroll-animate scroll-animate-delay-2">
+                    <div
+                        class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wide">
+                        Recommended
+                    </div>
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">UX Clarity Sprint</h3>
+                        <p class="text-sm font-medium text-primary mt-2">Rapid diagnostic and roadmap clarity</p>
+                    </div>
+                    <div class="flex items-center gap-2 mb-6 text-sm text-gray-800 dark:text-gray-200 font-bold">
+                        <span class="material-icons-round text-primary text-base">bolt</span>
+                        7 days intensive sprint
+                    </div>
+                    <div class="border-t border-gray-100 dark:border-gray-700 pt-6 mb-8 flex-grow">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">What's included</p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start gap-3 text-sm text-gray-900 dark:text-white font-medium">
+                                <span class="material-icons-round text-primary text-lg">check_circle</span>
+                                <span>Expert audit of current product friction</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-900 dark:text-white font-medium">
+                                <span class="material-icons-round text-primary text-lg">check_circle</span>
+                                <span>Prioritized roadmap of quick wins</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-900 dark:text-white font-medium">
+                                <span class="material-icons-round text-primary text-lg">check_circle</span>
+                                <span>Wireframes for top 2 critical issues</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-900 dark:text-white font-medium">
+                                <span class="material-icons-round text-primary text-lg">check_circle</span>
+                                <span>Loom video walkthroughs for your team</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button
+                        class="w-full py-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-lg shadow-lg shadow-orange-500/20 transition-all transform hover:scale-[1.02]">
+                        Get Started Now
+                    </button>
+                </div>
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full scroll-animate scroll-animate-delay-3">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Product Advisory</h3>
+                        <p class="text-sm font-medium text-gray-500 mt-2">Ongoing senior design thinking</p>
+                    </div>
+                    <div class="flex items-center gap-2 mb-6 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        <span class="material-icons-round text-primary text-base">event_repeat</span>
+                        Monthly engagement
+                    </div>
+                    <div class="border-t border-gray-100 dark:border-gray-700 pt-6 mb-8 flex-grow">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">What's included</p>
+                        <ul class="space-y-3">
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Weekly design reviews with your team</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Strategic UX guidance for sprint cycles</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Direct Slack access for quick questions</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                <span class="material-icons-round text-green-500 text-lg">check</span>
+                                <span>Hiring support for design roles</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button
+                        class="w-full py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white font-bold hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        Inquire for Advisory
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="py-24 bg-background-light dark:bg-background-dark" id="process">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 scroll-animate">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">How to get started</h2>
+                <p class="text-lg text-gray-600 dark:text-gray-400">A simple 3-step process to clarify your product
+                    vision.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 relative">
+                <div class="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700 z-0">
+                </div>
+                <div
+                    class="relative z-10 bg-white dark:bg-surface-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-center scroll-animate scroll-animate-delay-1">
+                    <div
+                        class="w-16 h-16 mx-auto bg-[#DFFFD6] rounded-full flex items-center justify-center mb-6 border-4 border-white dark:border-surface-dark">
+                        <span class="text-2xl font-bold text-green-700">1</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Book Intro Call</h3>
+                    <p class="text-sm text-gray-500 mb-6">Choose a time for a 15-minute chat to see if we're a good fit.
+                    </p>
+                    <span class="material-icons-round text-gray-400">calendar_month</span>
+                </div>
+                <div
+                    class="relative z-10 bg-white dark:bg-surface-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-center scroll-animate scroll-animate-delay-2">
+                    <div
+                        class="w-16 h-16 mx-auto bg-[#FDE8DE] rounded-full flex items-center justify-center mb-6 border-4 border-white dark:border-surface-dark">
+                        <span class="text-2xl font-bold text-primary">2</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Sprint Kickoff</h3>
+                    <p class="text-sm text-gray-500 mb-6">We align on goals, access your tools, and start the audit
+                        immediately.</p>
+                    <span class="material-icons-round text-gray-400">rocket</span>
+                </div>
+                <div
+                    class="relative z-10 bg-white dark:bg-surface-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-center scroll-animate scroll-animate-delay-3">
+                    <div
+                        class="w-16 h-16 mx-auto bg-[#E0E7FF] rounded-full flex items-center justify-center mb-6 border-4 border-white dark:border-surface-dark">
+                        <span class="text-2xl font-bold text-indigo-600">3</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Delivery &amp; Specs</h3>
+                    <p class="text-sm text-gray-500 mb-6">Receive designs, documentation, and a Loom walkthrough.</p>
+                    <span class="material-icons-round text-gray-400">verified</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="py-20 bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-12 scroll-animate">Recent outcomes</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div
+                    class="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-background-dark p-8 transition-all hover:shadow-hover scroll-animate scroll-animate-delay-1">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="h-8">
+                            <img src="https://i.ibb.co/V0g776xm/svgviewer-png-output.png" alt="Evangadi Logo"
+                                class="h-full w-auto object-contain transition-all group-hover:scale-105" />
+                        </div>
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            +40% Activation
+                        </span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">onBeacon</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Redesigned the onboarding flow for a complex B2B
+                        compliance tool, reducing time-to-value from 3 days to 4 hours.</p>
+                    <a class="inline-flex items-center text-primary font-semibold hover:underline"
+                        href="https://bharatuxd.framer.website/works" target="_blank" rel="noopener noreferrer">
+                        Read case study <span class="material-icons-round text-sm ml-1">arrow_forward</span>
+                    </a>
+                </div>
+                <div
+                    class="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-background-dark p-8 transition-all hover:shadow-hover scroll-animate scroll-animate-delay-2">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="h-8">
+                            <img src="https://tutoring.evangadi.com/assets/evangadi-logo-dark-BCaDuYGW.png"
+                                alt="Evangadi Logo"
+                                class="h-full w-auto object-contain transition-all group-hover:scale-105" />
+                        </div>
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            2x Engagement
+                        </span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Evangadi</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Streamlined the student dashboard for an EdTech
+                        platform, resulting in doubled daily active users and reduced support tickets.</p>
+                    <a class="inline-flex items-center text-primary font-semibold hover:underline"
+                        href="https://bharatuxd.framer.website/works" target="_blank" rel="noopener noreferrer">
+                        Read case study <span class="material-icons-round text-sm ml-1">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="py-32 bg-[#1E293B] dark:bg-[#020617] relative overflow-hidden" id="book">
+        <div
+            class="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]">
+        </div>
+        <div class="max-w-4xl mx-auto px-4 text-center relative z-10 scroll-animate">
+            <h2 class="text-4xl md:text-6xl font-extrabold text-white mb-8 tracking-tight">
+                Ready to start converting more?
+            </h2>
+            <p class="text-xl text-slate-300 mb-12">
+                No pitch. Just clarity. Let's discuss your current UX challenges.
+            </p>
+            <div class="flex justify-center">
+                <a class="inline-flex items-center px-8 py-4 bg-white text-gray-900 font-bold rounded-full text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-2xl"
+                    href="https://cal.id/bharatmodi">
+                    Book a 15-min intro call
+                    <span class="material-icons-round ml-2">arrow_forward</span>
+                </a>
+            </div>
+        </div>
+    </section>
+    <footer class="bg-[#111827] dark:bg-[#000000] pt-16 pb-8 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-1 md:col-span-2">
+                    <span class="text-2xl font-bold font-display text-white mb-4 block">clarity<span
+                            class="text-primary">.ux</span></span>
+                    <p class="text-gray-400 max-w-sm">
+                        Design and copy, built to convert — not just look good. If we can't help your brand convert
+                        better, we'll tell you.
+                    </p>
+                    <div class="mt-6">
+                        <a class="inline-flex items-center px-4 py-2 bg-primary/20 text-primary rounded-full text-sm font-medium hover:bg-primary/30 transition-colors"
+                            href="https://cal.id/bharatmodi">
+                            Let's Talk <span class="material-icons-round text-xs ml-1">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Links</h4>
+                    <ul class="space-y-2">
+                        <li><a class="text-gray-400 hover:text-white transition-colors" href="#">Home</a></li>
+                        <li><a class="text-gray-400 hover:text-white transition-colors" href="#">Resources</a></li>
+                        <li><a class="text-gray-400 hover:text-white transition-colors"
+                                href="mailto:bharatmodi2012@gmail.com">Contact Us</a></li>
+                        <li><a class="text-gray-400 hover:text-white transition-colors" href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Contact</h4>
+                    <p class="text-gray-400 mb-2">bharatmodi2012@gmail.com</p>
+                    <div class="flex space-x-4 mt-4">
+                        <a class="text-gray-400 hover:text-white transition-colors"
+                            href="https://www.linkedin.com/in/bharat-modi/" target="_blank" rel="noopener noreferrer">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                            </svg>
+                        </a>
+                        <a class="text-gray-400 hover:text-white transition-colors"
+                            href="https://www.instagram.com/bharatmodi_ux/" target="_blank" rel="noopener noreferrer">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a class="text-gray-400 hover:text-white transition-colors" href="https://x.com/bharatmodi2014"
+                            target="_blank" rel="noopener noreferrer">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center md:text-left">
+                <p class="text-gray-500 text-sm">© 2024 Clarity UX Agency. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>
