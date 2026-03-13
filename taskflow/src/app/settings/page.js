@@ -19,8 +19,19 @@ export default function SettingsPage() {
     }, []);
 
     async function handleLogout() {
-        await supabase.auth.signOut();
-        router.push('/login');
+        try {
+            // Manual clear of auth keys
+            Object.keys(localStorage).forEach(key => {
+                if (key.includes('sb-') || key.includes('supabase')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            await supabase.auth.signOut();
+        } catch (err) {
+            console.error('Logout failed:', err);
+        } finally {
+            router.push('/login');
+        }
     }
 
     const tabs = [
