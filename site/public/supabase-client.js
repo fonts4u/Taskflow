@@ -5,7 +5,10 @@ if (typeof SUPABASE_URL === 'undefined') {
 }
 
 if (typeof supabase !== 'undefined') {
-    if (!window.supabase) {
+    // Check if window.supabase is already a client instance with the 'auth' module.
+    // The CDN script itself creates a global 'supabase' object with 'createClient', 
+    // so we must ensure we replace it with the actual client instance.
+    if (!window.supabase || !window.supabase.auth) {
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 }
