@@ -227,8 +227,8 @@
 
                 if (error) throw error;
 
-                showToast('Registration successful! Accessing Control Dashboard.');
-                setTimeout(() => window.location.href = 'dashboard.html', 1500);
+                showToast('Registration successful! Please verify your identity via email.');
+                setTimeout(() => window.location.href = 'confirm-email.html', 1500);
 
             } catch (err) {
                 showToast(err.message || 'Signup failed', true);
