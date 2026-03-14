@@ -568,18 +568,24 @@ const SyncService = {
         const local = localStorage.getItem('tf_assignees');
         const localAssignees = local ? JSON.parse(local) : [];
         
-        let merged = [...dbAssignees];
-        if (this.currentUser) {
-            localAssignees.forEach(la => {
-                if (!merged.some(da => da.id === la.id)) {
-                    if (!la.user_id) merged.push(la);
-                }
-            });
-            if (window.supabase) {
-                localStorage.setItem('tf_assignees', JSON.stringify(merged));
+        const assigneeMap = new Map();
+        
+        // Strategy: Link current user to their assignees
+        dbAssignees.forEach(a => assigneeMap.set(a.id, a));
+        
+        localAssignees.forEach(la => {
+            if (assigneeMap.has(la.id)) {
+                assigneeMap.set(la.id, { ...assigneeMap.get(la.id), ...la });
+            } else {
+                assigneeMap.set(la.id, la);
             }
-        } else {
-            merged = localAssignees;
+        });
+
+        let merged = Array.from(assigneeMap.values());
+        
+        if (this.currentUser) {
+            merged = merged.filter(a => !a.user_id || a.user_id === this.currentUser.id);
+            localStorage.setItem('tf_assignees', JSON.stringify(merged));
         }
 
         if (merged.length > 0) return merged;
@@ -601,10 +607,16 @@ const SyncService = {
                     user_id: this.currentUser.id
                 });
         }
-        const assignees = await this.getAssignees();
+        
+        // Strictly update local cache with the new data
+        const local = localStorage.getItem('tf_assignees');
+        let assignees = local ? JSON.parse(local) : [];
         const index = assignees.findIndex(a => a.id === assignee.id);
-        if (index > -1) assignees[index] = assignee;
-        else assignees.push(assignee);
+        if (index > -1) {
+            assignees[index] = { ...assignees[index], ...assignee };
+        } else {
+            assignees.push(assignee);
+        }
         localStorage.setItem('tf_assignees', JSON.stringify(assignees));
     },
 
@@ -613,7 +625,7 @@ const SyncService = {
         if (window.supabase && this.currentUser) {
             await window.supabase.from('assignees').delete().eq('id', id);
         }
-        // Update local storage carefully
+        
         const local = localStorage.getItem('tf_assignees');
         if (local) {
             let assignees = JSON.parse(local);
