@@ -274,38 +274,48 @@ const SyncService = {
         const local = localStorage.getItem('tf_tasks');
         const localTasks = local ? JSON.parse(local) : [];
         
-        // If we successfully got DB tasks, we should update our local cache to reflect current DB state.
-        // However, we must keep items that are "Local Only" (created offline).
-        let merged = [...dbTasks];
+        // Create a Map for deduplication, with DB tasks taking priority for synced state
+        // but local tasks taking priority for unsynced changes.
+        const taskMap = new Map();
         
-        if (this.currentUser) {
-            localTasks.forEach(lt => {
-                // If the item doesn't exist in DB and matches current user, it MIGHT be deleted in DB.
-                // BUT if it doesn't have an ID that looks like it came from DB or if it's explicitly marked local, we keep it.
-                // For simplicity: If it has user_id and it's NOT in dbTasks, we assume it was deleted in DB (if we're online).
-                if (!merged.some(dt => dt.id === lt.id)) {
-                    // Only add if it doesn't have a user_id yet (brand new local item)
-                    if (!lt.user_id) {
-                        merged.push(lt);
-                    }
-                }
-            });
-
-            // Sync the cache back to remove deleted items
-            if (window.supabase) {
-                // Remove duplicates by ID one last time just in case
-                const uniqueTasks = [];
-                const seenIds = new Set();
-                merged.forEach(t => {
-                    if (!seenIds.has(t.id)) {
-                        uniqueTasks.push(t);
-                        seenIds.add(t.id);
-                    }
-                });
-                merged = uniqueTasks;
-                localStorage.setItem('tf_tasks', JSON.stringify(merged));
+        // Strategy: 
+        // 1. Put DB tasks in first.
+        // 2. Put local tasks in. If ID matches, the local task OVERWRITES the DB task.
+        // This is important because local storage has the LATEST state (e.g. moved column) 
+        // before the DB has finished syncing.
+        
+        dbTasks.forEach(t => taskMap.set(t.id, t));
+        
+        localTasks.forEach(lt => {
+            // If it's already in DB, we overwrite with local state IF it hasn't been synced yet
+            // or if we just want to ensure the UI is snappy.
+            // For now, let's always let local override DB to ensure "moving" works instantly.
+            if (taskMap.has(lt.id)) {
+                taskMap.set(lt.id, { ...taskMap.get(lt.id), ...lt });
+            } else {
+                // Completely new local task
+                taskMap.set(lt.id, lt);
             }
-        } else {
+        });
+
+        let merged = Array.from(taskMap.values());
+
+        // Final cleanup: ensure user_id is set if logged in
+        if (this.currentUser) {
+            merged = merged.filter(t => !t.user_id || t.user_id === this.currentUser.id);
+            // Deduplicate one last time just in case of weirdness
+            const unique = [];
+            const seen = new Set();
+            for (const t of merged) {
+                if (!seen.has(t.id)) {
+                    unique.push(t);
+                    seen.add(t.id);
+                }
+            }
+            merged = unique;
+            localStorage.setItem('tf_tasks', JSON.stringify(merged));
+        }
+ else {
             // Not logged in, use local completely
             merged = localTasks;
         }
@@ -370,7 +380,7 @@ const SyncService = {
                     title: task.title,
                     description: task.desc || task.description,
                     priority: task.priority || 'Medium',
-                    project: task.project,
+                    project: task.project && task.project.length > 20 ? undefined : task.project, // Avoid saving ID as name
                     project_id: projectId,
                     assignee_id: task.assignee_id,
                     column_id: task.column || 'backlog',

@@ -577,8 +577,20 @@
 
         async function renderTasks() {
             tasks = await getTasks();
+            
+            // Deduplicate at the start of render to be absolute sure
+            const uniqueTasks = [];
+            const seen = new Set();
+            tasks.forEach(t => {
+                if (!seen.has(t.id)) {
+                    uniqueTasks.push(t);
+                    seen.add(t.id);
+                }
+            });
+            tasks = uniqueTasks;
+
             const filter = document.getElementById('projectFilter').value;
-            const filtered = filter === 'All' ? tasks : tasks.filter(t => t.project === filter);
+            const filtered = filter === 'All' ? tasks : tasks.filter(t => t.project === filter || t.project_id === filter);
 
             const board = document.getElementById('board');
             
@@ -598,8 +610,10 @@
                 return;
             }
 
-            // Ensure columns are present
+            // Ensure columns are present and EMPTY
             board.innerHTML = originalBoardHTML;
+            document.querySelectorAll('.tasks-container').forEach(c => c.innerHTML = '');
+            document.querySelectorAll('.column-count').forEach(c => c.innerText = '0');
 
             const allAssignees = await SyncService.getAssignees();
 
@@ -769,11 +783,15 @@
             const id = document.getElementById('taskIdInput').value || SyncService.generateId();
             const existingTask = tasks.find(t => t.id === id);
 
+            const projSelect = document.getElementById('projSelect');
+            const selectedProjOption = projSelect.options[projSelect.selectedIndex];
+
             const task = {
                 id: id,
                 title: document.getElementById('titleInput').value,
                 desc: document.getElementById('descInput').value,
-                project: document.getElementById('projSelect').value,
+                project: selectedProjOption ? selectedProjOption.text : '',
+                project_id: document.getElementById('projSelect').value,
                 priority: document.getElementById('priorityInput').value,
                 column: existingTask ? existingTask.column : 'backlog',
                 status: existingTask ? existingTask.status : 'Backlog',
