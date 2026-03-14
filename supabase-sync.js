@@ -49,7 +49,42 @@ const SyncService = {
         return sessionStorage.getItem('tf_debug') === 'true';
     },
 
+    async logActivity(action, details) {
+        await this.ensureInit();
+        const activity = {
+            id: 'act-' + Date.now(),
+            action,
+            details,
+            time: new Date().toISOString(),
+            user_id: this.currentUser?.id
+        };
+        if (window.supabase) {
+            await window.supabase.from('activity_log').insert(activity);
+        }
+        const local = localStorage.getItem('tf_activity');
+        let logs = local ? JSON.parse(local) : [];
+        logs.unshift(activity);
+        localStorage.setItem('tf_activity', JSON.stringify(logs.slice(0, 50)));
+    },
+
+    async getActivityLog() {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            const { data } = await window.supabase.from('activity_log').select('*').order('time', { ascending: false }).limit(20);
+            if (data) return data;
+        }
+        const local = localStorage.getItem('tf_activity');
+        return local ? JSON.parse(local) : [
+            { id: '1', action: 'Member Invited', details: 'Sarah Miller joined the organization', time: new Date().toISOString() },
+            { id: '2', action: 'Role Changed', details: 'James Chen promoted to Admin', time: new Date(Date.now() - 3600000).toISOString() }
+        ];
+    },
+
     updateLinks() {
+        document.querySelectorAll('a[href="members.html"]').forEach(a => {
+            a.href = 'settings-access.html';
+            if (a.innerHTML.includes('Team')) a.innerHTML = a.innerHTML.replace('Team', 'Access Control');
+        });
         if (this.checkDebugMode()) {
             document.querySelectorAll('a').forEach(a => {
                 const href = a.getAttribute('href');
@@ -632,6 +667,116 @@ const SyncService = {
             assignees = assignees.filter(a => a.id !== id);
             localStorage.setItem('tf_assignees', JSON.stringify(assignees));
         }
+    },
+
+    async getProjectMembersDetail(projectId) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            const { data } = await window.supabase
+                .from('project_members')
+                .select('*, assignees(*)')
+                .eq('project_id', projectId);
+            if (data) return data;
+        }
+        return [];
+    },
+
+    // --- WORKSTATIONS ---
+    async getWorkstations() {
+        await this.ensureInit();
+        let dbWorkstations = [];
+        if (window.supabase && this.currentUser) {
+            try {
+                const { data, error } = await window.supabase
+                    .from('workstations')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id);
+                if (!error && data) dbWorkstations = data;
+            } catch (e) {
+                console.error('SyncService: Error fetching workstations:', e);
+            }
+        }
+
+        const local = localStorage.getItem('tf_workstations');
+        const localWorkstations = local ? JSON.parse(local) : [];
+        
+        const workstationMap = new Map();
+        dbWorkstations.forEach(w => workstationMap.set(w.id, w));
+        localWorkstations.forEach(lw => {
+            if (workstationMap.has(lw.id)) {
+                workstationMap.set(lw.id, { ...workstationMap.get(lw.id), ...lw });
+            } else {
+                workstationMap.set(lw.id, lw);
+            }
+        });
+
+        let merged = Array.from(workstationMap.values());
+        if (this.currentUser) {
+            merged = merged.filter(w => !w.user_id || w.user_id === this.currentUser.id);
+            localStorage.setItem('tf_workstations', JSON.stringify(merged));
+        }
+
+        if (merged.length > 0) return merged;
+
+        // Default workstation
+        return [{ id: 'ws-default', name: 'Main Workspace', user_id: this.currentUser?.id, created_at: new Date().toISOString() }];
+    },
+
+    async saveWorkstation(ws) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            await window.supabase
+                .from('workstations')
+                .upsert({ ...ws, user_id: this.currentUser.id });
+        }
+        const local = localStorage.getItem('tf_workstations');
+        let workstations = local ? JSON.parse(local) : [];
+        const index = workstations.findIndex(w => w.id === ws.id);
+        if (index > -1) workstations[index] = { ...workstations[index], ...ws };
+        else workstations.push(ws);
+        localStorage.setItem('tf_workstations', JSON.stringify(workstations));
+    },
+
+    // --- ROLES & PERMISSIONS ---
+    async getRolesAndPermissions() {
+        // Simulated default roles and permissions
+        return [
+            { 
+                role: 'Owner', 
+                permissions: { 
+                    create_project: true, edit_project: true, delete_project: true, 
+                    manage_users: true, invite_members: true, view_content: true, manage_billing: true 
+                } 
+            },
+            { 
+                role: 'Admin', 
+                permissions: { 
+                    create_project: true, edit_project: true, delete_project: true, 
+                    manage_users: true, invite_members: true, view_content: true, manage_billing: false 
+                } 
+            },
+            { 
+                role: 'Manager', 
+                permissions: { 
+                    create_project: true, edit_project: true, delete_project: false, 
+                    manage_users: false, invite_members: true, view_content: true, manage_billing: false 
+                } 
+            },
+            { 
+                role: 'Member', 
+                permissions: { 
+                    create_project: false, edit_project: false, delete_project: false, 
+                    manage_users: false, invite_members: false, view_content: true, manage_billing: false 
+                } 
+            },
+            { 
+                role: 'Viewer', 
+                permissions: { 
+                    create_project: false, edit_project: false, delete_project: false, 
+                    manage_users: false, invite_members: false, view_content: true, manage_billing: false 
+                } 
+            }
+        ];
     },
 
     async getProjectMembers(projectId) {
