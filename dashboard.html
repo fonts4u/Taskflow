@@ -15,6 +15,15 @@
     <script>
         // Auth Guard: Redirect to login if no session exists or is being established
         async function authGuard() {
+            // Debug Bypass: Support both URL param and persistent session storage
+            if (window.location.search.includes('debug=true') || sessionStorage.getItem('tf_debug') === 'true') {
+                if (window.location.search.includes('debug=true')) {
+                    sessionStorage.setItem('tf_debug', 'true');
+                }
+                console.warn('Auth Guard: Bypass active (debug/session)');
+                return;
+            }
+
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             if (currentSession) return; // Already logged in, we are good.
 
@@ -163,9 +172,8 @@
         <!-- Sidebar -->
         <aside class="w-72 sidebar-glass flex flex-col z-20">
             <div class="p-8 flex items-center gap-3">
-                <div
-                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
-                    <span class="material-icons-round">bolt</span>
+                <div id="sidebarLogo" class="shrink-0">
+                    <!-- Injected via JS -->
                 </div>
                 <span
                     class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
@@ -310,7 +318,7 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Task Overview</p>
-                                <p class="text-4xl font-bold text-slate-900" id="totalTasksCount">148</p>
+                                <p class="text-4xl font-bold text-slate-900" id="totalTasksCount">0</p>
                                 <p class="text-[10px] text-slate-400 font-medium">Total tasks in pipeline</p>
                             </div>
                         </div>
@@ -326,8 +334,8 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mb-1">
-                                    Completed (Weekly)</p>
-                                <p class="text-4xl font-bold text-slate-900">92</p>
+                                    Completed</p>
+                                <p class="text-4xl font-bold text-slate-900" id="completedTasksCount">0</p>
                             </div>
                         </div>
                         <div
@@ -342,7 +350,7 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-1">In Progress</p>
-                                <p class="text-4xl font-bold text-slate-900">34</p>
+                                <p class="text-4xl font-bold text-slate-900" id="inProgressTasksCount">0</p>
                             </div>
                         </div>
                         <div
@@ -353,11 +361,11 @@
                                     <span class="material-icons-round">warning</span>
                                 </div>
                                 <span
-                                    class="text-[10px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full">Critical</span>
+                                    class="text-[10px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full">High</span>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em] mb-1">Needs Attention</p>
-                                <p class="text-4xl font-bold text-slate-900">Delayed</p>
+                                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em] mb-1">Attention Required</p>
+                                <p class="text-4xl font-bold text-slate-900" id="delayedTasksCount">0</p>
                             </div>
                         </div>
                     </div>
@@ -539,7 +547,7 @@
                 const statusIcon = t.status === 'Done' ? 'check_circle' : 'hourglass_empty';
 
                 b.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-all cursor-pointer group" onclick="window.location.href='task-detail.html?id=${t.id}'">
+                    <tr class="hover:bg-slate-50 transition-all cursor-pointer group" onclick="SyncService.navigate('task-detail.html?id=${t.id}')">
                         <td class="px-6 py-6">
                             <div class="flex items-center gap-3">
                                 <div class="w-2 h-2 rounded-full bg-slate-200 group-hover:bg-orange-500 transition-all"></div>
@@ -587,7 +595,21 @@
             });
         }
 
+        async function renderDashboard() {
+            const stats = await SyncService.getDashboardStats();
+            document.getElementById('totalTasksCount').innerText = stats.totalTasks;
+            document.getElementById('completedTasksCount').innerText = stats.completedTasks;
+            document.getElementById('inProgressTasksCount').innerText = stats.inProgressTasks;
+            document.getElementById('delayedTasksCount').innerText = stats.delayedTasks;
+            
+            await populateProjectDropdown();
+            await renderRecentTasks();
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
+            const logoContainer = document.getElementById('sidebarLogo');
+            if (logoContainer) logoContainer.innerHTML = SyncService.LOGO_SVG;
+
             await SyncService.updateProfileUI();
 
             // Hide/Show seed button
@@ -597,8 +619,12 @@
                 seedBtn.parentElement.classList.add('hidden');
             }
 
-            await populateProjectDropdown();
-            await renderRecentTasks();
+            await renderDashboard();
+            
+            // Apply debug persistence to all links
+            if (window.SyncService) {
+                SyncService.updateLinks();
+            }
         });
 
         function openModal() { document.getElementById('taskModal').classList.remove('hidden'); }

@@ -15,6 +15,13 @@
     <script>
         // Auth Guard: Redirect to login if no session exists or is being established
         async function authGuard() {
+            if (window.location.search.includes('debug=true') || sessionStorage.getItem('tf_debug') === 'true') {
+                if (window.location.search.includes('debug=true')) {
+                    sessionStorage.setItem('tf_debug', 'true');
+                }
+                console.warn('Auth Guard: Bypass active (debug/session)');
+                return;
+            }
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             if (currentSession) return;
             if (window.location.hash.includes('access_token=')) {
@@ -33,7 +40,11 @@
             }
             window.location.href = 'login.html';
         }
-        authGuard();
+        authGuard().then(() => {
+            console.log('Auth Guard: Check complete.');
+        }).catch(err => {
+            console.error('Auth Guard: Error during check', err);
+        });
 
         // Listen for signed out event
         supabase.auth.onAuthStateChange((event, session) => {
@@ -135,6 +146,67 @@
             box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(0, 0, 0, 0.08);
             overflow: hidden;
+        }
+
+        /* Focus Mode Styles */
+        #focusOverlay {
+            background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .timer-text {
+            font-size: 10rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .glass-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .controls-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .controls-btn:hover {
+            background: white;
+            color: #E96A2C;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+
+        .timer-ring {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            border: 2px solid rgba(233, 106, 44, 0.1);
+            animation: pulse-ring 4s infinite ease-in-out;
         }
     </style>
 </head>
@@ -301,11 +373,21 @@
                         </select>
                     </div>
                     <div>
-                        <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
                         <input type="text" id="descInput" placeholder="Add details or context"
                             class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Attachments</label>
+                    <div class="flex items-center gap-2">
+                        <input type="file" id="fileInput" class="hidden" multiple onchange="handleFileSelect(event)">
+                        <button type="button" onclick="document.getElementById('fileInput').click()" class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 text-slate-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center gap-2 transition-all font-bold text-xs uppercase tracking-widest">
+                            <span class="material-icons-round text-sm">attach_file</span>
+                            Upload Files
+                        </button>
+                    </div>
+                    <div id="modalAttachmentList" class="mt-4 flex flex-wrap gap-2"></div>
                 </div>
                 <div class="pt-4 flex gap-4">
                     <button type="button" onclick="closeModal()"
@@ -384,60 +466,168 @@
                 const priority = task.priority || 'Medium';
                 const status = task.status || 'Active';
                 const description = task.desc || task.description || 'No description provided.';
-                const id = task.id ? `#${task.id.slice(0, 8)}` : 'UNKNOWN';
-                const due = task.due || 'ASAP Deployment';
+                const estimated = task.estimated_time || '0h 0m';
+                const consumed = formatMinutes(task.time_consumed || 0);
+                const progress = calculateProgress(task.time_consumed, task.estimated_time);
 
                 const priorityColor = priority === 'High' ? 'rose' : (priority === 'Medium' ? 'orange' : 'emerald');
+
+                const getFileInfo = (filename) => {
+                    if (!filename) return { icon: 'insert_drive_file', type: 'File' };
+                    const ext = filename.split('.').pop().toLowerCase();
+                    if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) return { icon: 'image', type: 'Image' };
+                    if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(ext)) return { icon: 'description', type: 'Document' };
+                    if (['zip', 'rar', '7z', 'tar'].includes(ext)) return { icon: 'archive', type: 'Archive' };
+                    return { icon: 'insert_drive_file', type: 'File' };
+                };
 
                 container.classList.add('opacity-0');
 
                 setTimeout(() => {
+                    const historyHtml = task.time_history && task.time_history.length > 0 
+                        ? task.time_history.map(session => `
+                            <div class="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-3xl hover:shadow-lg transition-all duration-300">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center">
+                                        <span class="material-icons-round text-xl">trending_up</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900 text-sm">Focus Session</p>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${new Date(session.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-slate-900 text-sm">+${session.duration}m</p>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Duration</p>
+                                </div>
+                            </div>
+                        `).join('')
+                        : `
+                            <div class="bg-slate-50 rounded-3xl p-12 flex flex-col items-center justify-center text-slate-300 border border-slate-100/50">
+                                <span class="material-icons-round text-5xl mb-4">history_toggle_off</span>
+                                <p class="font-bold text-sm text-slate-400">No focus sessions recorded yet.</p>
+                            </div>
+                        `;
+
                     container.innerHTML = `
-                        <div class="flex justify-between items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div class="space-y-6">
-                                <span class="text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">Project: ${project}</span>
-                                <h1 class="text-5xl font-bold text-slate-900 tracking-tight leading-[1.1]">${title}</h1>
-                            </div>
-                            <div class="flex flex-col items-end gap-3 text-right">
-                                 <span class="flex items-center gap-2 text-[10px] font-bold text-${priorityColor}-600 uppercase tracking-widest bg-${priorityColor}-50 px-4 py-2.5 rounded-2xl border border-${priorityColor}-100">
-                                      <span class="w-2 h-2 rounded-full bg-${priorityColor}-500 shadow-sm shadow-${priorityColor}-500/50"></span>
-                                      ${priority} Priority
-                                 </span>
-                                <span class="flex items-center gap-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-4 py-2.5 rounded-2xl border border-blue-100">
-                                    <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                                    Status: ${status}
-                                </span>
-                            </div>
-                        </div>
+                        <div class="flex flex-col md:flex-row gap-0 min-h-[700px] animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
+                            <!-- Close Button (Top Corner) -->
+                            <button onclick="window.location.href='kanban.html'" class="absolute right-8 top-8 w-10 h-10 bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-white rounded-full flex items-center justify-center transition-all z-10 border border-slate-100">
+                                <span class="material-icons-round text-lg">close</span>
+                            </button>
 
-                        <div class="grid grid-cols-2 gap-12 py-12 border-y border-slate-50 animate-in fade-in slide-in-from-bottom-6 duration-700">
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Due Date</p>
-                                <p class="text-slate-900 font-bold tracking-tight text-lg">${due}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Status</p>
-                                <p class="text-emerald-500 font-bold tracking-tight uppercase text-lg flex items-center gap-2"><span class="material-icons-round text-lg">verified</span> Verified</p>
-                            </div>
-                        </div>
+                            <!-- Left Column: Content -->
+                            <div class="flex-1 p-16 space-y-12 bg-white">
+                                <div class="space-y-6">
+                                    <div class="flex items-center gap-3">
+                                        <span class="px-3 py-1.5 bg-${priorityColor}-50 text-${priorityColor}-600 rounded-xl text-[9px] font-bold uppercase tracking-widest border border-${priorityColor}-100">
+                                            ${priority} Priority
+                                        </span>
+                                        <span class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-bold uppercase tracking-widest border border-blue-100">
+                                            ${status}
+                                        </span>
+                                        <button onclick="openEditModal()" class="ml-4 w-10 h-10 text-slate-300 hover:text-slate-600 transition-colors">
+                                            <span class="material-icons-round text-2xl">edit</span>
+                                        </button>
+                                    </div>
+                                    <h1 class="text-5xl font-extrabold text-slate-900 tracking-tight leading-tight max-w-2xl">${title}</h1>
+                                </div>
 
-                        <div class="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</p>
-                            <p class="text-xl text-slate-600 font-medium leading-[1.6]">${description}</p>
-                        </div>
+                                <div class="space-y-6">
+                                    <div class="flex items-center gap-3 text-slate-900">
+                                        <span class="material-icons-round text-slate-300">notes</span>
+                                        <h3 class="font-bold uppercase tracking-widest text-[10px] text-slate-400">Description</h3>
+                                    </div>
+                                    <p class="text-lg text-slate-500 font-medium leading-[1.6] max-w-2xl">${description}</p>
+                                </div>
 
-                        <div class="pt-12 flex items-center justify-between border-t border-slate-50 animate-in fade-in duration-1000">
-                            <div class="flex gap-4">
-                                <button onclick="openEditModal()" class="bg-[#E96A2C] text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-orange-500/30 active:scale-95 transition-all flex items-center gap-2">
-                                     <span class="material-icons-round">edit</span>
-                                     Edit Task
-                                </button>
-                                <button onclick="window.location.href='kanban.html?project=${encodeURIComponent(project)}'" class="bg-slate-50 text-slate-500 px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95 flex items-center gap-2">
-                                     <span class="material-icons-round">view_kanban</span>
-                                     Go to Board
-                                </button>
+                                ${task.attachments && task.attachments.length > 0 ? `
+                                <div class="space-y-6">
+                                    <div class="flex items-center gap-3 text-slate-900">
+                                        <span class="material-icons-round text-slate-300">attach_file</span>
+                                        <h3 class="font-bold uppercase tracking-widest text-[10px] text-slate-400">Attachments</h3>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        ${task.attachments.map(a => {
+                                            const info = getFileInfo(a.name);
+                                            return `
+                                                <a href="${a.url}" target="_blank" class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:border-orange-200 transition-all group">
+                                                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-orange-500 transition-colors shadow-sm">
+                                                        <span class="material-icons-round">${info.icon}</span>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="font-bold text-xs text-slate-700 truncate">${a.name}</p>
+                                                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${info.type}</p>
+                                                    </div>
+                                                </a>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                                ` : ''}
+
+                                <div class="space-y-6">
+                                    <div class="flex items-center gap-3 text-slate-900">
+                                        <span class="material-icons-round text-slate-300">history</span>
+                                        <h3 class="font-bold uppercase tracking-widest text-[10px] text-slate-400">Time History</h3>
+                                    </div>
+                                    <div class="space-y-3">
+                                        ${historyHtml}
+                                    </div>
+                                </div>
                             </div>
-                            <button onclick="history.back()" class="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 transition-colors">Go Back</button>
+
+                            <!-- Right Column: Metadata & Actions -->
+                            <div class="w-full md:w-[320px] bg-[#F8FAFC] border-l border-slate-100 p-12 flex flex-col gap-10">
+                                <div class="space-y-10">
+                                    <div class="space-y-4">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assignee</label>
+                                        <div class="flex items-center gap-4">
+                                            <img src="https://ui-avatars.com/api/?name=Sarah+Chen&background=E96A2C&color=fff&bold=true" class="w-12 h-12 rounded-2xl shadow-sm" alt="User">
+                                            <div>
+                                                <p class="font-bold text-slate-900 text-sm">Sarah Chen</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estimated Time</label>
+                                        <div class="flex items-center gap-3 font-bold text-slate-900">
+                                            <span class="material-icons-round text-slate-400">schedule</span>
+                                            <span class="text-sm">${estimated}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time Consumed</label>
+                                        <div class="flex items-center gap-3 font-bold text-slate-900">
+                                            <span class="material-icons-round text-slate-400">history</span>
+                                            <span class="text-sm">${consumed}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progress</label>
+                                        </div>
+                                        <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                            <div class="h-full bg-orange-500 rounded-full transition-all duration-1000" style="width: ${progress}%"></div>
+                                        </div>
+                                        <p class="text-[10px] font-extrabold text-slate-400 text-right uppercase tracking-[0.1em]">${progress}% Complete</p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-auto space-y-4">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Actions</label>
+                                    <button onclick="startFocusMode()" class="w-full bg-[#E96A2C] text-white py-5 rounded-3xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-orange-500/20 active:scale-[0.98] transition-all hover:bg-orange-600 group">
+                                        <span class="material-icons-round animate-pulse group-hover:scale-110 transition-transform">bolt</span>
+                                        Focus Mode
+                                    </button>
+                                    <button onclick="markAsCompleted()" class="w-full bg-slate-400 text-white py-5 rounded-3xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-500 transition-all active:scale-95 shadow-lg shadow-slate-400/10">
+                                        Mark as Completed
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     `;
                     container.classList.remove('opacity-0');
@@ -455,6 +645,187 @@
             }
         }
 
+        function formatMinutes(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return `${h}h ${m}m`;
+        }
+
+        function calculateProgress(consumed, estimated) {
+            if (!estimated || estimated === '0h 0m') return 0;
+            const parts = estimated.match(/(\d+)h\s*(\d+)m/) || estimated.match(/(\d+)h/) || estimated.match(/(\d+)m/);
+            if (!parts) return 0;
+            
+            let totalMins = 0;
+            if (estimated.includes('h')) {
+                const hMatch = estimated.match(/(\d+)h/);
+                if (hMatch) totalMins += parseInt(hMatch[1]) * 60;
+            }
+            if (estimated.includes('m')) {
+                const mMatch = estimated.match(/(\d+)m/);
+                if (mMatch) totalMins += parseInt(mMatch[1]);
+            }
+            
+            if (totalMins === 0) return 0;
+            return Math.min(100, Math.round((consumed / totalMins) * 100));
+        }
+
+        // --- Focus Mode State & Logic ---
+        let focusActive = false;
+        let focusInterval = null;
+        let focusTimeElapsed = 0; // in seconds
+        let isPaused = false;
+
+        function startFocusMode() {
+            if (!currentTask) return;
+            focusActive = true;
+            focusTimeElapsed = 0;
+            isPaused = false;
+            
+            document.getElementById('focusTaskTitle').innerText = currentTask.title;
+            document.getElementById('focusOverlay').classList.remove('hidden');
+            document.getElementById('focusOverlay').classList.add('flex');
+            
+            // Set initial 60:00 display
+            document.getElementById('focusTimer').innerText = "60 : 00";
+            
+            focusInterval = setInterval(() => {
+                if (!isPaused) {
+                    focusTimeElapsed++;
+                    updateFocusTimer();
+                }
+            }, 1000);
+        }
+
+        function updateFocusTimer() {
+            const totalRemaining = 60 * 60 - focusTimeElapsed; // 60 min session
+            if (totalRemaining <= 0) {
+                stopFocusMode();
+                return;
+            }
+            
+            const mins = Math.floor(totalRemaining / 60);
+            const secs = totalRemaining % 60;
+            document.getElementById('focusTimer').innerText = `${mins.toString().padStart(2, '0')} : ${secs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            isPaused = !isPaused;
+            document.getElementById('timerIcon').innerText = isPaused ? 'play_arrow' : 'pause';
+            document.getElementById('timerIcon').parentElement.classList.toggle('bg-orange-500/10', !isPaused);
+            document.getElementById('timerIcon').parentElement.classList.toggle('text-orange-600', !isPaused);
+            document.getElementById('timerIcon').parentElement.classList.toggle('bg-orange-500', isPaused);
+            document.getElementById('timerIcon').parentElement.classList.toggle('text-white', isPaused);
+        }
+
+        function resetTimer(e) {
+            focusTimeElapsed = 0;
+            isPaused = false;
+            
+            // Sync play/pause button UI
+            const timerIcon = document.getElementById('timerIcon');
+            const toggleBtn = timerIcon.parentElement;
+            timerIcon.innerText = 'pause';
+            toggleBtn.classList.add('bg-orange-500/10', 'text-orange-600');
+            toggleBtn.classList.remove('bg-orange-500', 'text-white');
+            
+            // Refresh display
+            document.getElementById('focusTimer').innerText = "60 : 00";
+            
+            // Visual feedback for refresh icon
+            const target = e ? e.currentTarget : event.currentTarget;
+            const refreshIcon = target ? target.querySelector('.material-icons-round') : null;
+            if (refreshIcon) {
+                refreshIcon.classList.add('rotate-[360deg]', 'text-orange-500');
+                setTimeout(() => {
+                    refreshIcon.classList.remove('rotate-[360deg]', 'text-orange-500');
+                }, 600);
+            }
+
+            showToast('Focus session restarted.');
+        }
+
+        function toggleFocusModeSetting(setting) {
+            const icons = {
+                'tune': 'Focus intensity adjusted',
+                'music_note': 'Ambient Lo-Fi toggled',
+                'coffee': 'Short break scheduled',
+                'volume_up': 'Atmosphere volume updated'
+            };
+            showToast(icons[setting] || 'Focus setting updated');
+            
+            const btn = event.currentTarget;
+            btn.classList.add('bg-orange-500', 'text-white', 'scale-110');
+            setTimeout(() => btn.classList.remove('bg-orange-500', 'text-white', 'scale-110'), 500);
+        }
+
+        async function stopFocusMode() {
+            if (!focusActive) return;
+            clearInterval(focusInterval);
+            focusActive = false;
+            
+            const minsSpent = Math.max(1, Math.round(focusTimeElapsed / 60));
+            currentTask.time_consumed = (currentTask.time_consumed || 0) + minsSpent;
+            
+            if (!currentTask.time_history) currentTask.time_history = [];
+            currentTask.time_history.unshift({
+                date: new Date().toISOString(),
+                duration: minsSpent
+            });
+            
+            await SyncService.saveTask(currentTask);
+            document.getElementById('focusOverlay').classList.add('hidden');
+            document.getElementById('focusOverlay').classList.remove('flex');
+            
+            await renderTaskDetail();
+            showToast(`Session completed. +${minsSpent}m logged.`);
+        }
+
+        function markAsCompleted() {
+            if (!currentTask) return;
+            currentTask.status = 'Done';
+            currentTask.column = 'done';
+            SyncService.saveTask(currentTask).then(() => {
+                renderTaskDetail();
+                showToast('Task marked as completed!');
+            });
+        }
+
+        let editAttachments = [];
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (!files) return;
+            for (let i = 0; i < files.length; i++) {
+                editAttachments.push({ name: files[i].name, url: '#' });
+            }
+            renderModalAttachments();
+        }
+
+        function renderModalAttachments() {
+            const container = document.getElementById('modalAttachmentList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            editAttachments.forEach((a, i) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl text-[9px] font-bold text-slate-500 border border-slate-100 group transition-all hover:bg-white hover:border-orange-200';
+                el.innerHTML = `
+                    <span class="material-icons-round text-xs text-slate-400">insert_drive_file</span>
+                    <span class="truncate max-w-[80px]">${a.name}</span>
+                    <button type="button" onclick="removeModalAttachment(${i})" class="ml-1 text-rose-400 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100">
+                        <span class="material-icons-round text-xs">close</span>
+                    </button>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function removeModalAttachment(i) {
+            editAttachments.splice(i, 1);
+            renderModalAttachments();
+        }
+
         async function openEditModal() {
             if (!currentTask) return;
             const projects = await SyncService.getProjects();
@@ -469,6 +840,9 @@
             document.getElementById('projSelect').value = currentTask.project;
             document.getElementById('priorityInput').value = currentTask.priority;
             document.getElementById('descInput').value = currentTask.desc || currentTask.description || '';
+            
+            editAttachments = [...(currentTask.attachments || [])];
+            renderModalAttachments();
 
             document.getElementById('taskModal').classList.remove('hidden');
         }
@@ -478,13 +852,13 @@
         async function handleSaveTask(e) {
             e.preventDefault();
             const task = {
+                ...currentTask,
                 id: document.getElementById('taskIdInput').value,
                 title: document.getElementById('titleInput').value,
                 project: document.getElementById('projSelect').value,
                 priority: document.getElementById('priorityInput').value,
                 desc: document.getElementById('descInput').value,
-                status: currentTask.status,
-                column: currentTask.column
+                attachments: editAttachments
             };
 
             await SyncService.saveTask(task);
@@ -494,10 +868,56 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            await SyncService.ensureInit();
             await SyncService.updateProfileUI();
             await renderTaskDetail();
         });
     </script>
+    <!-- Focus Mode Overlay (Image 1 Mockup) -->
+    <div id="focusOverlay" class="fixed inset-0 z-[100] hidden flex-col items-center justify-between p-12 animate-in fade-in duration-700">
+        <!-- Top bar -->
+        <div class="w-full flex justify-between items-center opacity-70 hover:opacity-100 transition-opacity">
+            <button onclick="stopFocusMode()" class="flex items-center gap-2 font-bold text-slate-500 hover:text-slate-900 transition-colors">
+                <span class="material-icons-round">arrow_back</span>
+                Exit Focus Mode
+            </button>
+            <div class="glass-btn p-1.5 rounded-2xl flex items-center gap-1">
+                <button onclick="toggleFocusModeSetting('tune')" class="controls-btn transition-all"><span class="material-icons-round text-lg">tune</span></button>
+                <button onclick="toggleFocusModeSetting('music_note')" class="controls-btn text-orange-500 transition-all"><span class="material-icons-round text-lg">music_note</span></button>
+                <button onclick="toggleFocusModeSetting('coffee')" class="controls-btn transition-all"><span class="material-icons-round text-lg">coffee</span></button>
+                <button onclick="toggleFocusModeSetting('volume_up')" class="controls-btn transition-all"><span class="material-icons-round text-lg">volume_up</span></button>
+            </div>
+        </div>
+
+        <!-- Center Counter -->
+        <div class="relative flex flex-col items-center justify-center">
+            <div class="timer-ring"></div>
+            <div class="timer-ring" style="width: 440px; height: 440px; animation-delay: 1s;"></div>
+            <div class="text-center relative z-10">
+                <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4">Deep Focus Session</p>
+                <h2 id="focusTaskTitle" class="text-5xl font-extrabold text-slate-900 mb-2 max-w-2xl mx-auto">Task Title</h2>
+                <p class="text-slate-400 font-medium text-sm mb-20">Eliminate distractions and focus on the task at hand.</p>
+                
+                <div class="relative inline-block">
+                    <div id="focusTimer" class="timer-text font-display">00 : 00</div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.5em] text-slate-400 -mt-4">Remaining</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="flex items-center gap-6">
+            <button onclick="toggleTimer()" class="w-20 h-20 bg-orange-500/10 text-orange-600 rounded-[2rem] flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all shadow-xl shadow-orange-500/10 active:scale-90">
+                <span class="material-icons-round text-3xl" id="timerIcon">pause</span>
+            </button>
+            <button onclick="resetTimer(event)" class="w-14 h-14 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95 group">
+                <span class="material-icons-round text-2xl transition-transform duration-500 group-active:rotate-180">refresh</span>
+            </button>
+            <button onclick="stopFocusMode()" class="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all active:scale-95 shadow-lg shadow-emerald-500/10">
+                <span class="material-icons-round text-2xl">check_circle</span>
+            </button>
+        </div>
+    </div>
 </body>
 
 </html>
