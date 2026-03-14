@@ -156,9 +156,9 @@
         }
 
         .column-drag-over {
-            background: rgba(233, 106, 44, 0.05) !important;
-            border: 2px dashed rgba(233, 106, 44, 0.3) !important;
-            transform: scale(1.01);
+            background: rgba(233, 106, 44, 0.08) !important;
+            border: 2px dashed #E96A2C !important;
+            box-shadow: inset 0 0 40px rgba(233, 106, 44, 0.05);
             transition: all 0.2s ease;
         }
 
@@ -515,49 +515,49 @@
         }
 
         const originalBoardHTML = `
-                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300" data-column="backlog" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
-                    <div class="flex justify-between items-center mb-2 px-2">
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="backlog" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
                         <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
                             <span class="w-3 h-3 rounded-full bg-slate-300"></span>
                             Backlog
                         </h3>
                         <span class="column-count text-slate-400 text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
-                    <p class="text-[10px] text-slate-400 font-medium px-2 mb-6 uppercase tracking-wider">Planned work and upcoming tasks.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <p class="text-[10px] text-slate-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Planned work and upcoming tasks.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
-                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300" data-column="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
-                    <div class="flex justify-between items-center mb-2 px-2">
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
                         <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
                             <span class="w-3 h-3 rounded-full bg-blue-500"></span>
                             In Progress
                         </h3>
                         <span class="column-count text-blue-500 text-[10px] font-bold bg-blue-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
-                    <p class="text-[10px] text-blue-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks currently being worked on.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <p class="text-[10px] text-blue-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Tasks currently being worked on.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
-                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300" data-column="review" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
-                    <div class="flex justify-between items-center mb-2 px-2">
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="review" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
                         <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
                             <span class="w-3 h-3 rounded-full bg-orange-500"></span>
                             Needs Attention
                         </h3>
                         <span class="column-count text-orange-500 text-[10px] font-bold bg-orange-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
-                    <p class="text-[10px] text-orange-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks requiring immediate focus.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <p class="text-[10px] text-orange-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Tasks requiring immediate focus.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
-                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300" data-column="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
-                    <div class="flex justify-between items-center mb-2 px-2">
+                <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                    <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
                         <h3 class="font-bold flex items-center gap-3 tracking-tight text-slate-800 text-lg">
                             <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
                             Completed
                         </h3>
                         <span class="column-count text-emerald-500 text-[10px] font-bold bg-emerald-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
-                    <p class="text-[10px] text-emerald-400 font-medium px-2 mb-6 uppercase tracking-wider">Finished and verified items.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <p class="text-[10px] text-emerald-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Finished and verified items.</p>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
         `;
 
@@ -764,45 +764,61 @@
             ev.dataTransfer.dropEffect = 'move';
         }
 
+        let dragCounter = 0;
         function dragEnter(ev) {
+            ev.preventDefault();
+            dragCounter++;
             const col = ev.target.closest('.column-bg');
             if (col) col.classList.add('column-drag-over');
         }
 
         function dragLeave(ev) {
-            const col = ev.target.closest('.column-bg');
-            // Check if we're actually leaving the column, not just moving between children
-            if (col && !col.contains(ev.relatedTarget)) {
-                col.classList.remove('column-drag-over');
+            dragCounter--;
+            if (dragCounter === 0) {
+                const col = ev.target.closest('.column-bg');
+                if (col) col.classList.remove('column-drag-over');
             }
         }
 
         function drag(ev) { 
             const card = ev.target.closest('.task-card');
             if (card) {
-                ev.dataTransfer.setData("text", card.id); 
+                // Use a specific data type to avoid picking up random links/URLs
+                ev.dataTransfer.setData("taskflow/id", card.id); 
+                ev.dataTransfer.setData("text/plain", card.id); 
                 ev.dataTransfer.effectAllowed = 'move';
-                // Add a slight delay to avoid drag image issues
-                setTimeout(() => card.style.opacity = '0.4', 0);
+                
+                // Visual feedback for original card
+                setTimeout(() => {
+                    card.classList.add('opacity-30', 'scale-95');
+                }, 0);
             }
         }
         
         async function drop(ev) {
             ev.preventDefault();
-            const draggedId = ev.dataTransfer.getData("text");
+            dragCounter = 0;
+            
+            // Get ID from our custom type first, fallback to text
+            let draggedId = ev.dataTransfer.getData("taskflow/id") || ev.dataTransfer.getData("text/plain");
             const dropTarget = ev.target.closest('[data-column]');
             
-            // Cleanup visual state
+            // Cleanup visual states
             document.querySelectorAll('.column-bg').forEach(c => c.classList.remove('column-drag-over'));
-            document.querySelectorAll('.task-card').forEach(c => c.style.opacity = '1');
+            document.querySelectorAll('.task-card').forEach(c => c.classList.remove('opacity-30', 'scale-95'));
 
-            console.log('Kanban: Dropping task', draggedId, 'to column', dropTarget?.getAttribute('data-column'));
+            console.log('Kanban: Dropped item', draggedId, 'to column', dropTarget?.getAttribute('data-column'));
 
             if (dropTarget && draggedId) {
+                // Defend against accidental sidebar link drags
+                if (draggedId.startsWith('http')) {
+                    console.warn('Kanban: Ignored accidental link drag:', draggedId);
+                    return;
+                }
+
                 const t = await SyncService.getTaskById(draggedId);
                 if (t) {
                     const newColumn = dropTarget.getAttribute('data-column');
-                    
                     if (t.column === newColumn) return;
 
                     t.column = newColumn;
@@ -814,7 +830,7 @@
                     };
                     t.status = statusMap[newColumn] || 'Backlog';
                     
-                    const h3 = dropTarget.querySelector('h3');
+                    const h3 = dropTarget.querySelector('.font-bold'); // More robust selector
                     const columnLabel = h3 ? h3.innerText.trim() : newColumn;
 
                     await SyncService.saveTask(t);
