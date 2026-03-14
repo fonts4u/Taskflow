@@ -465,6 +465,7 @@
         let tasks = [];
         let taskToDelete = null;
         let userProfile = null;
+        let isRendering = false;
 
         async function loadProfile() {
             userProfile = await SyncService.getProfile();
@@ -538,7 +539,7 @@
                         <span class="column-count text-slate-400 text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-slate-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Planned work and upcoming tasks.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1"></div>
                 </div>
                 <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
                     <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
@@ -549,7 +550,7 @@
                         <span class="column-count text-blue-500 text-[10px] font-bold bg-blue-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-blue-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Tasks currently being worked on.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1"></div>
                 </div>
                 <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="review" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
                     <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
@@ -560,7 +561,7 @@
                         <span class="column-count text-orange-500 text-[10px] font-bold bg-orange-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-orange-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Tasks requiring immediate focus.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1"></div>
                 </div>
                 <div class="column-bg flex flex-col p-6 w-[340px] shrink-0 transition-all duration-300 relative h-full" data-column="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
                     <div class="flex justify-between items-center mb-2 px-2 pointer-events-none">
@@ -571,12 +572,15 @@
                         <span class="column-count text-emerald-500 text-[10px] font-bold bg-emerald-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-emerald-400 font-medium px-2 mb-6 uppercase tracking-wider pointer-events-none">Finished and verified items.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[400px] px-1"></div>
                 </div>
         `;
 
         async function renderTasks() {
-            tasks = await getTasks();
+            if (isRendering) return;
+            isRendering = true;
+            try {
+                tasks = await getTasks();
             
             // Deduplicate at the start of render to be absolute sure
             const uniqueTasks = [];
@@ -670,6 +674,9 @@
                 const badge = col.querySelector('.column-count');
                 if (badge) badge.innerText = count;
             });
+            } finally {
+                isRendering = false;
+            }
         }
 
         window.addEventListener('load', async () => {
@@ -800,10 +807,23 @@
                 attachments: currentAttachments
             };
 
-            await SyncService.saveTask(task);
-            closeModal();
-            await renderTasks();
-            showToast(existingTask ? 'Changes saved.' : 'Task created successfully.');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Syncing...';
+            }
+
+            try {
+                await SyncService.saveTask(task);
+                closeModal();
+                await renderTasks();
+                showToast(existingTask ? 'Changes saved.' : 'Task created successfully.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = existingTask ? 'Save Changes' : 'Create Task';
+                }
+            }
         }
 
         function allowDrop(ev) { 
@@ -846,6 +866,7 @@
         
         async function drop(ev) {
             ev.preventDefault();
+            ev.stopPropagation();
             
             let draggedId = ev.dataTransfer.getData("text/plain");
             const dropTarget = ev.target.closest('.column-bg');
