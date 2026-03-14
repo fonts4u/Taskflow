@@ -463,6 +463,11 @@
 
         let tasks = [];
         let taskToDelete = null;
+        let userProfile = null;
+
+        async function loadProfile() {
+            userProfile = await SyncService.getProfile();
+        }
 
         function showToast(message, isError = false) {
             const container = document.getElementById('toastContainer');
@@ -587,60 +592,68 @@
             // Ensure columns are present
             board.innerHTML = originalBoardHTML;
 
-                // Render tasks
-                filtered.forEach(t => {
-                    const color = t.priority === 'High' ? 'rose' : (t.priority === 'Medium' ? 'orange' : 'emerald');
-                    const isProgress = t.column === 'in-progress';
-                    const html = `
-                        <div id="${t.id}" class="task-card p-6 rounded-[2.5rem] relative group cursor-grab active:cursor-grabbing" draggable="true" ondragstart="drag(event)">
-                            <div class="flex justify-between items-start mb-4">
-                                 <div class="flex items-center gap-2">
-                                     <div class="w-2 h-2 rounded-full bg-${color}-500 shadow-sm shadow-${color}-500/50"></div>
-                                     <span class="text-[10px] font-bold text-${color}-600 uppercase tracking-widest">${t.priority}</span>
-                                 </div>
-                                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                     ${isProgress ? `
-                                     <button onclick="SyncService.navigate('task-detail.html?id=${t.id}')" class="p-2 hover:bg-orange-50 rounded-xl text-orange-400 hover:text-orange-600 transition-all" title="Start Focus Mode">
-                                         <span class="material-icons-round text-lg">play_circle</span>
-                                     </button>
-                                     ` : ''}
-                                     <button onclick="openEditModal('${t.id}')" class="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-orange-500 transition-all">
-                                         <span class="material-icons-round text-lg">edit</span>
-                                     </button>
-                                     <button onclick="openDeleteModal('${t.id}')" class="p-2 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-500 transition-all">
-                                         <span class="material-icons-round text-lg">delete</span>
-                                     </button>
-                                 </div>
-                            </div>
-                            <h4 class="font-bold text-slate-900 tracking-tight leading-relaxed mb-4 cursor-pointer hover:text-orange-600 transition-colors" onclick="SyncService.navigate('task-detail.html?id=${t.id}')">
-                                ${t.title}
-                            </h4>
-                            <div class="flex justify-between items-center pt-4 border-t border-slate-50">
-                                <span class="text-[9px] font-bold bg-slate-50 text-slate-400 px-2.5 py-1.5 rounded-lg uppercase tracking-widest border border-slate-100">
-                                    ${t.project}
-                                </span>
-                                <div class="flex -space-x-2">
-                                    <img src="https://ui-avatars.com/api/?name=User&background=E2E8F0&color=94A3B8" class="w-7 h-7 rounded-full border-2 border-white shadow-sm" alt="">
-                                </div>
+            // Render tasks
+            filtered.forEach(t => {
+                const color = t.priority === 'High' ? 'rose' : (t.priority === 'Medium' ? 'orange' : 'emerald');
+                const isProgress = t.column === 'in-progress';
+                const avatarName = userProfile?.full_name || 'User';
+                const avatarUrl = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${avatarName}&background=E2E8F0&color=94A3B8`;
+
+                const html = `
+                    <div id="${t.id}" class="task-card p-6 rounded-[2.5rem] relative group cursor-grab active:cursor-grabbing" draggable="true" ondragstart="drag(event)">
+                        <div class="flex justify-between items-start mb-4">
+                             <div class="flex items-center gap-2">
+                                 <div class="w-2 h-2 rounded-full bg-${color}-500 shadow-sm shadow-${color}-500/50"></div>
+                                 <span class="text-[10px] font-bold text-${color}-600 uppercase tracking-widest">${t.priority}</span>
+                             </div>
+                             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                 ${isProgress ? `
+                                 <button onclick="SyncService.navigate('task-detail.html?id=${t.id}')" class="p-2 hover:bg-orange-50 rounded-xl text-orange-400 hover:text-orange-600 transition-all" title="Start Focus Mode">
+                                     <span class="material-icons-round text-lg">play_circle</span>
+                                 </button>
+                                 ` : ''}
+                                 <button onclick="openEditModal('${t.id}')" class="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-orange-500 transition-all">
+                                     <span class="material-icons-round text-lg">edit</span>
+                                 </button>
+                                 <button onclick="openDeleteModal('${t.id}')" class="p-2 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-500 transition-all">
+                                     <span class="material-icons-round text-lg">delete</span>
+                                 </button>
+                             </div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 tracking-tight leading-relaxed mb-4 cursor-pointer hover:text-orange-600 transition-colors" onclick="SyncService.navigate('task-detail.html?id=${t.id}')">
+                            ${t.title}
+                        </h4>
+                        <div class="flex justify-between items-center pt-4 border-t border-slate-50">
+                            <span class="text-[9px] font-bold bg-slate-50 text-slate-400 px-2.5 py-1.5 rounded-lg uppercase tracking-widest border border-slate-100">
+                                ${t.project}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${avatarName}</span>
+                                <img src="${avatarUrl}" class="w-7 h-7 rounded-full border-2 border-white shadow-sm" alt="User">
                             </div>
                         </div>
-                    `;
+                    </div>
+                `;
                 const container = document.querySelector(`[data-column="${t.column}"] .tasks-container`);
                 if (container) container.insertAdjacentHTML('beforeend', html);
             });
 
             document.querySelectorAll('[data-column]').forEach(col => {
                 const count = col.querySelectorAll('.task-card').length;
-                col.querySelector('.column-count').innerText = count;
+                const badge = col.querySelector('.column-count');
+                if (badge) badge.innerText = count;
             });
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('load', async () => {
             const logoContainer = document.getElementById('sidebarLogo');
             if (logoContainer) logoContainer.innerHTML = SyncService.LOGO_SVG;
 
+            await SyncService.ensureInit();
+            await loadProfile();
             await SyncService.updateProfileUI();
             await populateProjectDropdowns();
+            
             const urlParams = new URLSearchParams(window.location.search);
             const pName = urlParams.get('project');
             if (pName) {
@@ -763,7 +776,6 @@
             ev.preventDefault(); 
             ev.dataTransfer.dropEffect = 'move';
             
-            // Add highlight class on dragover for more responsive feedback
             const col = ev.target.closest('.column-bg');
             if (col) {
                 if (!col.classList.contains('column-drag-over')) {
@@ -778,10 +790,8 @@
         }
 
         function dragLeave(ev) {
-            // Only remove if we're not moving to a child or another part of the same column
             const col = ev.target.closest('.column-bg');
             if (col && !col.contains(ev.relatedTarget)) {
-                // We'll let dragover handle re-adding it, but clear it when leaving columns entirely
                 if (!ev.relatedTarget || !ev.relatedTarget.closest('.column-bg')) {
                     col.classList.remove('column-drag-over');
                 }
@@ -791,23 +801,9 @@
         function drag(ev) { 
             const card = ev.target.closest('.task-card');
             if (card) {
-                // Robust ID capture
-                const id = card.getAttribute('id');
-                ev.dataTransfer.setData("taskflow/id", id); 
-                ev.dataTransfer.setData("text/plain", id); 
+                ev.dataTransfer.setData("text/plain", card.id); 
                 ev.dataTransfer.effectAllowed = 'move';
                 
-                // Set a custom drag image if possible to make it cleaner
-                try {
-                    const dragImage = card.cloneNode(true);
-                    dragImage.style.width = card.offsetWidth + 'px';
-                    dragImage.style.position = "absolute";
-                    dragImage.style.top = "-9999px";
-                    document.body.appendChild(dragImage);
-                    ev.dataTransfer.setDragImage(dragImage, 10, 10);
-                    setTimeout(() => document.body.removeChild(dragImage), 0);
-                } catch(e) {}
-
                 setTimeout(() => {
                     card.classList.add('opacity-30', 'scale-95');
                 }, 0);
@@ -817,18 +813,17 @@
         async function drop(ev) {
             ev.preventDefault();
             
-            let draggedId = ev.dataTransfer.getData("taskflow/id") || ev.dataTransfer.getData("text/plain");
-            const dropTarget = ev.target.closest('[data-column]');
+            let draggedId = ev.dataTransfer.getData("text/plain");
+            const dropTarget = ev.target.closest('.column-bg');
             
             document.querySelectorAll('.column-bg').forEach(c => c.classList.remove('column-drag-over'));
             document.querySelectorAll('.task-card').forEach(c => c.classList.remove('opacity-30', 'scale-95'));
 
             if (dropTarget && draggedId) {
-                // Remove any URL junk if browser appended it
                 if (draggedId.includes('?')) draggedId = draggedId.split('?')[0];
                 if (draggedId.includes('/')) draggedId = draggedId.split('/').pop();
                 
-                if (!draggedId || draggedId.length < 5) return; // Ignore junk
+                if (!draggedId) return;
 
                 const t = await SyncService.getTaskById(draggedId);
                 if (t) {
@@ -853,6 +848,22 @@
                 }
             }
         }
+
+        window.addEventListener('load', async () => {
+            await SyncService.ensureInit();
+            await loadProfile();
+            await SyncService.updateProfileUI();
+            await populateProjectDropdowns();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const pName = urlParams.get('project');
+            if (pName) {
+                document.getElementById('projectFilter').value = decodeURIComponent(pName);
+                document.getElementById('boardTitle').innerText = decodeURIComponent(pName);
+            }
+            await renderTasks();
+            SyncService.updateLinks();
+        });
 
         function openColumnModal() { alert('Column customization coming soon in v2.0'); }
     </script>
