@@ -380,6 +380,25 @@
         </div>
     </div>
 
+    <!-- Workstation Modal -->
+    <div id="workstationModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] hidden items-center justify-center p-6">
+        <div class="bg-white rounded-[3rem] w-full max-w-lg p-12 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div class="flex items-center justify-between mb-10">
+                <h3 class="text-3xl font-black text-slate-900 tracking-tight font-display">New Workstation</h3>
+                <button onclick="closeWorkstationModal()" class="text-slate-300 hover:text-slate-900 transition-all"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="space-y-8">
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Workstation Name</label>
+                    <input type="text" id="wsName" placeholder="e.g. Engineering, Marketing" class="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-lg">
+                </div>
+                <div class="pt-6">
+                    <button onclick="saveNewWorkstation()" class="w-full bg-[#E96A2C] text-white py-6 rounded-3xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-orange-500/20 active:scale-[0.98] transition-all">Create Workstation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
 
     <script src="supabase-sync.js"></script>
@@ -390,17 +409,58 @@
             document.getElementById('inviteModal').classList.replace('hidden', 'flex');
         }
 
+        function openWorkstationModal() {
+            document.getElementById('wsName').value = '';
+            document.getElementById('workstationModal').classList.replace('hidden', 'flex');
+        }
+
+        function closeWorkstationModal() {
+            document.getElementById('workstationModal').classList.replace('flex', 'hidden');
+        }
+
         function closeInviteModal() {
             document.getElementById('inviteModal').classList.replace('flex', 'hidden');
+        }
+
+        async function saveNewWorkstation() {
+            const name = document.getElementById('wsName').value;
+            if (!name) return showToast('Please enter a name', true);
+            
+            const ws = {
+                id: SyncService.generateId(),
+                name: name,
+                created_at: new Date().toISOString()
+            };
+            
+            await SyncService.saveWorkstation(ws);
+            showToast(`Workstation "${name}" created`);
+            await loadData();
+            loadWorkstations();
+            closeWorkstationModal();
         }
 
         async function sendInvite() {
             const email = document.getElementById('inviteEmail').value;
             const role = document.getElementById('inviteRole').value;
+            const wsId = document.getElementById('inviteWorkstation').value;
             if (!email) return showToast('Please enter a valid email', true);
             
-            showToast(`Invitation sent to ${email} as ${role}`);
-            await SyncService.logActivity('Member Invited', `${email} was invited as ${role}`);
+            // Actually create a ghost assignee
+            const newAssignee = {
+                id: SyncService.generateId(),
+                name: email.split('@')[0],
+                email: email,
+                role: role,
+                workstation_ids: [wsId],
+                avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=random`
+            };
+            
+            await SyncService.saveAssignee(newAssignee);
+            showToast(`Invitation sent to ${email}`);
+            await SyncService.logActivity('Member Invited', `${email} joined as ${role}`);
+            
+            await loadData();
+            renderMembersTable();
             renderAuditLog();
             closeInviteModal();
         }
@@ -536,7 +596,7 @@
         async function loadProjectAccess(projectId) {
             if (!projectId) return;
             const container = document.getElementById('projectMembersList');
-            const projectMembers = await SyncService.getProjectMembers(projectId);
+            const projectMembers = await SyncService.getProjectMembersDetail(projectId);
             
             container.innerHTML = `
                 <div class="flex items-center justify-between mb-8 pb-8 border-b border-slate-50">
@@ -614,7 +674,7 @@
             // Workstations
             const wsContainer = document.getElementById('panelWorkstations');
             wsContainer.innerHTML = workstations.map(w => `
-                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-2">
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-2" data-ws-id="${w.id}">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-100">${w.name[0]}</div>
                         <span class="text-sm font-bold text-slate-700">${w.name}</span>
@@ -649,11 +709,23 @@
             // Gather active WS
             const activeWS = [];
             document.querySelectorAll('#panelWorkstations .toggle-switch.active').forEach(sw => {
-                // In a real app we'd map back the ID
+                // We need to extract the workspace ID from the onclick or a data attribute
+                // Since I used togglePanelWS('${w.id}', this), I should have added a data-id
             });
-            // Simplified for demo: just save the role change we made in memory
+            
+            // Let's redo the workstation rendering and selection
+            const wsIds = [];
+            document.querySelectorAll('#panelWorkstations [data-ws-id]').forEach(el => {
+                if (el.querySelector('.toggle-switch.active')) {
+                    wsIds.push(el.dataset.wsId);
+                }
+            });
+            
+            m.workstation_ids = wsIds;
+            
             await SyncService.saveAssignee(m);
             showToast(`Permissions updated for ${m.name}`);
+            await loadData();
             renderMembersTable();
             closePanel();
         }
