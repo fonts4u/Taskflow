@@ -310,13 +310,7 @@ const SyncService = {
             merged = localTasks;
         }
 
-        if (merged.length > 0) return merged;
-
-        // Default tasks for new users
-        return [
-            { id: 't1', title: 'Initial Project Audit', status: 'In Progress', column: 'in-progress', priority: 'High', due: new Date().toISOString().split('T')[0] },
-            { id: 't2', title: 'Stakeholder Sync', status: 'Backlog', column: 'backlog', priority: 'Medium', due: new Date().toISOString().split('T')[0] }
-        ];
+        return merged;
     },
 
     async getTaskById(taskId) {
