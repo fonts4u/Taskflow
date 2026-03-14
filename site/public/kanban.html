@@ -518,7 +518,7 @@
                         <span class="column-count text-slate-400 text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-slate-400 font-medium px-2 mb-6 uppercase tracking-wider">Planned work and upcoming tasks.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
                 <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="flex justify-between items-center mb-2 px-2">
@@ -529,7 +529,7 @@
                         <span class="column-count text-blue-500 text-[10px] font-bold bg-blue-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-blue-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks currently being worked on.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
                 <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="review" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="flex justify-between items-center mb-2 px-2">
@@ -540,7 +540,7 @@
                         <span class="column-count text-orange-500 text-[10px] font-bold bg-orange-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-orange-400 font-medium px-2 mb-6 uppercase tracking-wider">Tasks requiring immediate focus.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
                 <div class="column-bg flex flex-col p-6 w-[340px] shrink-0" data-column="done" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="flex justify-between items-center mb-2 px-2">
@@ -551,7 +551,7 @@
                         <span class="column-count text-emerald-500 text-[10px] font-bold bg-emerald-50 px-3 py-1 rounded-full shadow-sm">0</span>
                     </div>
                     <p class="text-[10px] text-emerald-400 font-medium px-2 mb-6 uppercase tracking-wider">Finished and verified items.</p>
-                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[100px] px-1"></div>
+                    <div class="tasks-container space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-[150px] px-1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
             </div>
         `;
@@ -766,10 +766,16 @@
             const draggedId = ev.dataTransfer.getData("text");
             const dropTarget = ev.target.closest('[data-column]');
             
+            console.log('Kanban: Dropping task', draggedId, 'to column', dropTarget?.getAttribute('data-column'));
+
             if (dropTarget && draggedId) {
                 const t = tasks.find(t => t.id === draggedId);
                 if (t) {
                     const newColumn = dropTarget.getAttribute('data-column');
+                    
+                    // Optimization: If dropped in same column, do nothing
+                    if (t.column === newColumn) return;
+
                     t.column = newColumn;
                     
                     // Map column ID to canonical status for analytics and consistency
@@ -781,10 +787,14 @@
                     };
                     t.status = statusMap[newColumn] || 'Backlog';
                     
-                    const columnLabel = dropTarget.querySelector('h3').innerText.trim();
+                    const h3 = dropTarget.querySelector('h3');
+                    const columnLabel = h3 ? h3.innerText.trim() : newColumn;
+
                     await SyncService.saveTask(t);
                     await renderTasks();
                     showToast(`Task moved to ${columnLabel}`);
+                } else {
+                    console.error('Kanban: Task not found for ID', draggedId);
                 }
             }
         }
