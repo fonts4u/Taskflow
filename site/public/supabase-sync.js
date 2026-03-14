@@ -795,18 +795,47 @@ const SyncService = {
     async updateProjectMembers(projectId, assigneeIds) {
         await this.ensureInit();
         if (window.supabase && this.currentUser) {
-            // Transactional update would be better but simple clear/insert works for now
             await window.supabase.from('project_members').delete().eq('project_id', projectId);
             const members = assigneeIds.map(aid => ({
                 project_id: projectId,
                 assignee_id: aid,
-                user_id: this.currentUser.id
+                user_id: this.currentUser.id,
+                role: 'Member'
             }));
             if (members.length > 0) {
                 await window.supabase.from('project_members').insert(members);
             }
         }
         localStorage.setItem(`tf_pm_${projectId}`, JSON.stringify(assigneeIds));
+    },
+
+    async addProjectMember(projectId, assigneeId, role = 'Member') {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            await window.supabase.from('project_members').upsert({
+                project_id: projectId,
+                assignee_id: assigneeId,
+                user_id: this.currentUser.id,
+                role: role
+            });
+        }
+        const local = localStorage.getItem(`tf_pm_${projectId}`);
+        let ids = local ? JSON.parse(local) : [];
+        if (!ids.includes(assigneeId)) ids.push(assigneeId);
+        localStorage.setItem(`tf_pm_${projectId}`, JSON.stringify(ids));
+    },
+
+    async removeProjectMember(projectId, assigneeId) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            await window.supabase.from('project_members').delete().eq('project_id', projectId).eq('assignee_id', assigneeId);
+        }
+        const local = localStorage.getItem(`tf_pm_${projectId}`);
+        if (local) {
+            let ids = JSON.parse(local);
+            ids = ids.filter(id => id !== assigneeId);
+            localStorage.setItem(`tf_pm_${projectId}`, JSON.stringify(ids));
+        }
     },
 
     // --- PROFILES ---

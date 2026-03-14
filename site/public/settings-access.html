@@ -380,6 +380,36 @@
         </div>
     </div>
 
+    <!-- Add Project Member Modal -->
+    <div id="addProjectMemberModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] hidden items-center justify-center p-6">
+        <div class="bg-white rounded-[3rem] w-full max-w-lg p-12 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div class="flex items-center justify-between mb-10">
+                <h3 class="text-3xl font-black text-slate-900 tracking-tight font-display">Add Project Member</h3>
+                <button onclick="closeAddProjectMemberModal()" class="text-slate-300 hover:text-slate-900 transition-all"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="space-y-8">
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Member</label>
+                    <select id="projectMemberSelect" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold text-slate-700 outline-none focus:ring-4 focus:ring-orange-500/10">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Role</label>
+                    <select id="projectMemberRole" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold text-slate-700 outline-none focus:ring-4 focus:ring-orange-500/10">
+                        <option>Manager</option>
+                        <option>Editor</option>
+                        <option selected>Member</option>
+                        <option>Viewer</option>
+                    </select>
+                </div>
+                <div class="pt-6">
+                    <button onclick="addMemberToProject()" class="w-full bg-[#E96A2C] text-white py-6 rounded-3xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-orange-500/20 active:scale-[0.98] transition-all">Add to Project</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Workstation Modal -->
     <div id="workstationModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] hidden items-center justify-center p-6">
         <div class="bg-white rounded-[3rem] w-full max-w-lg p-12 shadow-2xl animate-in zoom-in-95 duration-300">
@@ -463,6 +493,55 @@
             renderMembersTable();
             renderAuditLog();
             closeInviteModal();
+        }
+
+        let selectedProjectId = null;
+
+        async function openAddProjectMemberModal() {
+            selectedProjectId = document.getElementById('projectSelector').value;
+            if (!selectedProjectId) return showToast('Please select a project first', true);
+
+            const projectMembers = await SyncService.getProjectMembers(selectedProjectId);
+            const availableMembers = members.filter(m => !projectMembers.includes(m.id));
+
+            const select = document.getElementById('projectMemberSelect');
+            select.innerHTML = availableMembers.map(m => `<option value="${m.id}">${m.name} (${m.email})</option>`).join('');
+            
+            if (availableMembers.length === 0) {
+                select.innerHTML = '<option disabled>All members are already assigned</option>';
+            }
+
+            document.getElementById('addProjectMemberModal').classList.replace('hidden', 'flex');
+        }
+
+        function closeAddProjectMemberModal() {
+            document.getElementById('addProjectMemberModal').classList.replace('flex', 'hidden');
+        }
+
+        async function addMemberToProject() {
+            const assigneeId = document.getElementById('projectMemberSelect').value;
+            const role = document.getElementById('projectMemberRole').value;
+            if (!assigneeId) return showToast('Please select a member', true);
+
+            await SyncService.addProjectMember(selectedProjectId, assigneeId, role);
+            showToast('Member added to project');
+            loadProjectAccess(selectedProjectId);
+            closeAddProjectMemberModal();
+        }
+
+        async function removeMemberFromProject(assigneeId) {
+            const projectId = document.getElementById('projectSelector').value;
+            if (!confirm('Are you sure you want to remove this member from the project?')) return;
+
+            await SyncService.removeProjectMember(projectId, assigneeId);
+            showToast('Member removed from project');
+            loadProjectAccess(projectId);
+        }
+
+        async function updateProjectMemberRole(assigneeId, role) {
+            const projectId = document.getElementById('projectSelector').value;
+            await SyncService.addProjectMember(projectId, assigneeId, role);
+            showToast(`Role updated to ${role}`);
         }
         let currentUser = null;
         let members = [];
@@ -601,7 +680,7 @@
             container.innerHTML = `
                 <div class="flex items-center justify-between mb-8 pb-8 border-b border-slate-50">
                     <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Team access (${projectMembers.length})</p>
-                    <button class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C] border-b-2 border-orange-500/20 hover:border-orange-500 transition-all">Add Project Member</button>
+                    <button onclick="openAddProjectMemberModal()" class="text-[10px] font-black uppercase tracking-widest text-[#E96A2C] border-b-2 border-orange-500/20 hover:border-orange-500 transition-all">Add Project Member</button>
                 </div>
             ` + projectMembers.map(pm => {
                 const role = pm.role || 'Member';
@@ -615,13 +694,13 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-6">
-                            <select class="bg-white border-none py-2 px-4 rounded-xl text-xs font-bold text-slate-600 focus:ring-4 focus:ring-orange-500/10 cursor-pointer">
+                            <select onchange="updateProjectMemberRole('${pm.assignee_id}', this.value)" class="bg-white border-none py-2 px-4 rounded-xl text-xs font-bold text-slate-600 focus:ring-4 focus:ring-orange-500/10 cursor-pointer">
                                 <option ${role === 'Manager' ? 'selected' : ''}>Manager</option>
                                 <option ${role === 'Editor' ? 'selected' : ''}>Editor</option>
                                 <option ${role === 'Member' ? 'selected' : ''}>Member</option>
                                 <option ${role === 'Viewer' ? 'selected' : ''}>Viewer</option>
                             </select>
-                            <button class="text-slate-300 hover:text-rose-500 transition-all">
+                            <button onclick="removeMemberFromProject('${pm.assignee_id}')" class="text-slate-300 hover:text-rose-500 transition-all">
                                 <span class="material-icons-round text-lg">logout</span>
                             </button>
                         </div>
