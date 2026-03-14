@@ -671,14 +671,37 @@ const SyncService = {
 
     async getProjectMembersDetail(projectId) {
         await this.ensureInit();
+        let dbData = [];
         if (window.supabase && this.currentUser) {
-            const { data } = await window.supabase
-                .from('project_members')
-                .select('*, assignees(*)')
-                .eq('project_id', projectId);
-            if (data) return data;
+            try {
+                const { data } = await window.supabase
+                    .from('project_members')
+                    .select('*, assignees(*)')
+                    .eq('project_id', projectId);
+                if (data) dbData = data;
+            } catch (e) {
+                console.error('Error fetching project members:', e);
+            }
         }
-        return [];
+
+        // Local fallback
+        const localIds = localStorage.getItem(`tf_pm_${projectId}`);
+        if (!dbData.length && localIds) {
+            const ids = JSON.parse(localIds);
+            const allAssignees = await this.getAssignees();
+            return ids.map(id => {
+                const assignee = allAssignees.find(a => a.id === id);
+                // Return structure matching Supabase join
+                return {
+                    project_id: projectId,
+                    assignee_id: id,
+                    role: assignee?.role || 'Member', // This is their ORG role as fallback
+                    assignees: assignee
+                };
+            });
+        }
+        
+        return dbData;
     },
 
     // --- WORKSTATIONS ---
@@ -821,14 +844,19 @@ const SyncService = {
         }
         const local = localStorage.getItem(`tf_pm_${projectId}`);
         let ids = local ? JSON.parse(local) : [];
-        if (!ids.includes(assigneeId)) ids.push(assigneeId);
-        localStorage.setItem(`tf_pm_${projectId}`, JSON.stringify(ids));
+        if (!ids.includes(assigneeId)) {
+            ids.push(assigneeId);
+            localStorage.setItem(`tf_pm_${projectId}`, JSON.stringify(ids));
+        }
     },
 
     async removeProjectMember(projectId, assigneeId) {
         await this.ensureInit();
         if (window.supabase && this.currentUser) {
-            await window.supabase.from('project_members').delete().eq('project_id', projectId).eq('assignee_id', assigneeId);
+            await window.supabase.from('project_members')
+                .delete()
+                .eq('project_id', projectId)
+                .eq('assignee_id', assigneeId);
         }
         const local = localStorage.getItem(`tf_pm_${projectId}`);
         if (local) {
