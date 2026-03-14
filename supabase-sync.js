@@ -244,14 +244,23 @@ const SyncService = {
                 if (!error && data) {
                     console.log(`SyncService: Found ${data.length} tasks in DB`);
                     dbTasks = data.map(t => ({
-                        ...t,
+                        id: t.id,
+                        title: t.title,
+                        description: t.description,
                         desc: t.description,
-                        column: t.column_id,
+                        priority: t.priority,
+                        project: t.project,
+                        project_id: t.project_id,
                         assignee_id: t.assignee_id,
+                        column_id: t.column_id,
+                        column: t.column_id,
+                        status: t.status,
+                        due: t.due,
                         estimated_time: t.estimated_time || '0h 0m',
                         time_consumed: t.time_consumed || 0,
                         attachments: t.attachments || [],
-                        time_history: t.time_history || []
+                        time_history: t.time_history || [],
+                        user_id: t.user_id
                     }));
                 } else if (error) {
                     console.error('SyncService: Error fetching tasks:', error);
@@ -261,12 +270,47 @@ const SyncService = {
             }
         }
 
-        // Fallback or Merge
+        // Merge and deduplicate by ID
         const local = localStorage.getItem('tf_tasks');
         const localTasks = local ? JSON.parse(local) : [];
         
-        if (dbTasks.length > 0) return dbTasks;
-        if (localTasks.length > 0) return localTasks;
+        // If we successfully got DB tasks, we should update our local cache to reflect current DB state.
+        // However, we must keep items that are "Local Only" (created offline).
+        let merged = [...dbTasks];
+        
+        if (this.currentUser) {
+            localTasks.forEach(lt => {
+                // If the item doesn't exist in DB and matches current user, it MIGHT be deleted in DB.
+                // BUT if it doesn't have an ID that looks like it came from DB or if it's explicitly marked local, we keep it.
+                // For simplicity: If it has user_id and it's NOT in dbTasks, we assume it was deleted in DB (if we're online).
+                if (!merged.some(dt => dt.id === lt.id)) {
+                    // Only add if it doesn't have a user_id yet (brand new local item)
+                    if (!lt.user_id) {
+                        merged.push(lt);
+                    }
+                }
+            });
+
+            // Sync the cache back to remove deleted items
+            if (window.supabase) {
+                // Remove duplicates by ID one last time just in case
+                const uniqueTasks = [];
+                const seenIds = new Set();
+                merged.forEach(t => {
+                    if (!seenIds.has(t.id)) {
+                        uniqueTasks.push(t);
+                        seenIds.add(t.id);
+                    }
+                });
+                merged = uniqueTasks;
+                localStorage.setItem('tf_tasks', JSON.stringify(merged));
+            }
+        } else {
+            // Not logged in, use local completely
+            merged = localTasks;
+        }
+
+        if (merged.length > 0) return merged;
 
         // Default tasks for new users
         return [
@@ -286,13 +330,23 @@ const SyncService = {
 
             if (!error && data) {
                 return {
-                    ...data,
+                    id: data.id,
+                    title: data.title,
+                    description: data.description,
                     desc: data.description,
+                    priority: data.priority,
+                    project: data.project,
+                    project_id: data.project_id,
+                    assignee_id: data.assignee_id,
+                    column_id: data.column_id,
                     column: data.column_id,
+                    status: data.status,
+                    due: data.due,
                     estimated_time: data.estimated_time || '0h 0m',
                     time_consumed: data.time_consumed || 0,
                     attachments: data.attachments || [],
-                    time_history: data.time_history || []
+                    time_history: data.time_history || [],
+                    user_id: data.user_id
                 };
             }
         }
@@ -315,7 +369,7 @@ const SyncService = {
                 if (p) projectId = p.id;
             }
 
-            const { error } = await window.supabase
+            let { error } = await window.supabase
                 .from('tasks')
                 .upsert({
                     id: task.id,
@@ -335,6 +389,30 @@ const SyncService = {
                     user_id: this.currentUser.id
                 });
             
+            // Safe retry if assignee_id is missing in DB
+            if (error && error.code === 'PGRST204' && error.message.includes('assignee_id')) {
+                console.warn('SyncService: assignee_id column missing, retrying safe save');
+                const { error: retryError } = await window.supabase
+                    .from('tasks')
+                    .upsert({
+                        id: task.id,
+                        title: task.title,
+                        description: task.desc || task.description,
+                        priority: task.priority || 'Medium',
+                        project: task.project,
+                        project_id: projectId,
+                        column_id: task.column || 'backlog',
+                        status: task.status || 'Backlog',
+                        due: task.due || task.due_date,
+                        estimated_time: task.estimated_time || '0h 0m',
+                        time_consumed: task.time_consumed || 0,
+                        attachments: task.attachments || [],
+                        time_history: task.time_history || [],
+                        user_id: this.currentUser.id
+                    });
+                error = retryError;
+            }
+
             if (error) {
                 console.error('SyncService: Supabase task save failed:', error);
             } else {
@@ -342,11 +420,15 @@ const SyncService = {
             }
         }
 
-        // Always update local storage
-        const tasks = await this.getTasks();
+        // Update local storage carefully
+        const local = localStorage.getItem('tf_tasks');
+        let tasks = local ? JSON.parse(local) : [];
         const index = tasks.findIndex(t => t.id === task.id);
-        if (index > -1) tasks[index] = task;
-        else tasks.push(task);
+        if (index > -1) {
+            tasks[index] = { ...tasks[index], ...task };
+        } else {
+            tasks.push(task);
+        }
         localStorage.setItem('tf_tasks', JSON.stringify(tasks));
         console.log('SyncService: Local storage tasks updated');
     },
@@ -360,9 +442,13 @@ const SyncService = {
                 .eq('id', taskId);
         }
 
-        const tasks = await this.getTasks();
-        const filtered = tasks.filter(t => t.id !== taskId);
-        localStorage.setItem('tf_tasks', JSON.stringify(filtered));
+        // Update local storage carefully
+        const local = localStorage.getItem('tf_tasks');
+        if (local) {
+            let tasks = JSON.parse(local);
+            tasks = tasks.filter(t => t.id !== taskId);
+            localStorage.setItem('tf_tasks', JSON.stringify(tasks));
+        }
     },
 
     // --- EVENTS ---
@@ -478,8 +564,21 @@ const SyncService = {
         const local = localStorage.getItem('tf_assignees');
         const localAssignees = local ? JSON.parse(local) : [];
         
-        if (dbAssignees.length > 0) return dbAssignees;
-        if (localAssignees.length > 0) return localAssignees;
+        let merged = [...dbAssignees];
+        if (this.currentUser) {
+            localAssignees.forEach(la => {
+                if (!merged.some(da => da.id === la.id)) {
+                    if (!la.user_id) merged.push(la);
+                }
+            });
+            if (window.supabase) {
+                localStorage.setItem('tf_assignees', JSON.stringify(merged));
+            }
+        } else {
+            merged = localAssignees;
+        }
+
+        if (merged.length > 0) return merged;
 
         // Default assignees
         return [
@@ -510,9 +609,13 @@ const SyncService = {
         if (window.supabase && this.currentUser) {
             await window.supabase.from('assignees').delete().eq('id', id);
         }
-        const assignees = await this.getAssignees();
-        const filtered = assignees.filter(a => a.id !== id);
-        localStorage.setItem('tf_assignees', JSON.stringify(filtered));
+        // Update local storage carefully
+        const local = localStorage.getItem('tf_assignees');
+        if (local) {
+            let assignees = JSON.parse(local);
+            assignees = assignees.filter(a => a.id !== id);
+            localStorage.setItem('tf_assignees', JSON.stringify(assignees));
+        }
     },
 
     async getProjectMembers(projectId) {
@@ -676,10 +779,11 @@ const SyncService = {
     async seedDummyData() {
         await this.ensureInit();
 
+        // Use stable IDs to avoid duplicates if seeded multiple times
         const dummyProjects = [
-            { id: crypto.randomUUID(), name: "AI Strategy 2030", description: "Department-wide LLM integration.", progress: 35, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800" },
-            { id: crypto.randomUUID(), name: "Lunar Base Logistics", description: "Scheduling automated cargo transport.", progress: 12, status: "Active", color: "orange", image_url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=800" },
-            { id: crypto.randomUUID(), name: "Global Supply Chain", description: "Route optimization for peak seasons.", progress: 88, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800" }
+            { id: 'proj-seed-1', name: "AI Strategy 2030", description: "Department-wide LLM integration.", progress: 35, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800" },
+            { id: 'proj-seed-2', name: "Lunar Base Logistics", description: "Scheduling automated cargo transport.", progress: 12, status: "Active", color: "orange", image_url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=800" },
+            { id: 'proj-seed-3', name: "Global Supply Chain", description: "Route optimization for peak seasons.", progress: 88, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800" }
         ];
 
         if (window.supabase && this.currentUser) {
@@ -697,9 +801,9 @@ const SyncService = {
 
                 // Add some tasks for each project
                 const tasks = [
-                    { id: crypto.randomUUID(), title: `Baseline Audit - ${p.name}`, status: 'Done', column_id: 'done', priority: 'High' },
-                    { id: crypto.randomUUID(), title: `Stakeholder Review`, status: 'In Progress', column_id: 'in-progress', priority: 'Medium' },
-                    { id: crypto.randomUUID(), title: `Final Release Candidate`, status: 'Backlog', column_id: 'backlog', priority: 'Low' }
+                    { id: `task-seed-1-${p.id}`, title: `Baseline Audit - ${p.name}`, status: 'Done', column_id: 'done', priority: 'High' },
+                    { id: `task-seed-2-${p.id}`, title: `Stakeholder Review`, status: 'In Progress', column_id: 'in-progress', priority: 'Medium' },
+                    { id: `task-seed-3-${p.id}`, title: `Final Release Candidate`, status: 'Backlog', column_id: 'backlog', priority: 'Low' }
                 ];
 
                 for (const t of tasks) {
@@ -726,6 +830,18 @@ const SyncService = {
                     user_id: this.currentUser.id
                 });
             }
+
+            // Create some team members
+            const sarah = { id: crypto.randomUUID(), name: 'Elena Vance', role: 'Security Specialist', email: 'elena@resistance.com', avatar_url: 'https://ui-avatars.com/api/?name=Elena+Vance&background=6366f1&color=fff' };
+            const ghost = { id: crypto.randomUUID(), name: 'Simon Riley', role: 'Field Operative', email: 'ghost@taskforce.com', avatar_url: 'https://ui-avatars.com/api/?name=Simon+Riley&background=020617&color=fff' };
+            
+            await this.saveAssignee(sarah);
+            await this.saveAssignee(ghost);
+
+            // Assign to first project
+            if (dummyProjects[0]) {
+                await this.updateProjectMembers(dummyProjects[0].id, [sarah.id, ghost.id]);
+            }
         } else {
             // Local-only seeding
             localStorage.setItem('tf_projects', JSON.stringify(dummyProjects));
@@ -733,8 +849,8 @@ const SyncService = {
             const allTasks = [];
             for (const p of dummyProjects) {
                 allTasks.push(
-                    { id: crypto.randomUUID(), title: `Baseline Audit - ${p.name}`, status: 'Done', column: 'done', priority: 'High', project_id: p.id },
-                    { id: crypto.randomUUID(), title: `Stakeholder Review`, status: 'In Progress', column: 'in-progress', priority: 'Medium', project_id: p.id }
+                    { id: `task-seed-1-${p.id}`, title: `Baseline Audit - ${p.name}`, status: 'Done', column: 'done', priority: 'High', project_id: p.id },
+                    { id: `task-seed-2-${p.id}`, title: `Stakeholder Review`, status: 'In Progress', column: 'in-progress', priority: 'Medium', project_id: p.id }
                 );
             }
             localStorage.setItem('tf_tasks', JSON.stringify(allTasks));
@@ -746,6 +862,15 @@ const SyncService = {
                 { id: crypto.randomUUID(), title: "UX Audit Presentation", description: "Reviewing premium design enhancements.", event_date: new Date(today.getTime() + 172800000).toISOString().split('T')[0], color: "teal" }
             ];
             localStorage.setItem('tf_events', JSON.stringify(dummyEvents));
+
+            // Create some team members
+            const sarah = { id: crypto.randomUUID(), name: 'Elena Vance', role: 'Security Specialist', email: 'elena@resistance.com', avatar_url: 'https://ui-avatars.com/api/?name=Elena+Vance&background=6366f1&color=fff' };
+            const ghost = { id: crypto.randomUUID(), name: 'Simon Riley', role: 'Field Operative', email: 'ghost@taskforce.com', avatar_url: 'https://ui-avatars.com/api/?name=Simon+Riley&background=020617&color=fff' };
+            
+            localStorage.setItem('tf_assignees', JSON.stringify([sarah, ghost]));
+            if (dummyProjects[0]) {
+                localStorage.setItem(`tf_pm_${dummyProjects[0].id}`, JSON.stringify([sarah.id, ghost.id]));
+            }
         }
     },
 

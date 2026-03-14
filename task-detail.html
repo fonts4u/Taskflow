@@ -373,10 +373,16 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
-                        <input type="text" id="descInput" placeholder="Add details or context"
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Assignee</label>
+                        <select id="assigneeSelect"
                             class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
+                        </select>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Description</label>
+                    <input type="text" id="descInput" placeholder="Add details or context"
+                        class="w-full px-6 py-4 rounded-2xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition-all font-bold text-sm">
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Attachments</label>
@@ -443,7 +449,10 @@
                 }
 
                 const container = document.getElementById('taskDetailContent');
-                const task = await SyncService.getTaskById(taskId);
+                const [task, allAssignees] = await Promise.all([
+                    SyncService.getTaskById(taskId),
+                    SyncService.getAssignees()
+                ]);
                 currentTask = task;
 
                 if (!task) {
@@ -469,6 +478,11 @@
                 const estimated = task.estimated_time || '0h 0m';
                 const consumed = formatMinutes(task.time_consumed || 0);
                 const progress = calculateProgress(task.time_consumed, task.estimated_time);
+
+                const currentAssignee = allAssignees.find(a => a.id === task.assignee_id) || {
+                    name: 'Unassigned',
+                    avatar_url: `https://ui-avatars.com/api/?name=Unassigned&background=slate&color=fff`
+                };
 
                 const priorityColor = priority === 'High' ? 'rose' : (priority === 'Medium' ? 'orange' : 'emerald');
 
@@ -583,9 +597,10 @@
                                     <div class="space-y-4">
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assignee</label>
                                         <div class="flex items-center gap-4">
-                                            <img src="https://ui-avatars.com/api/?name=Sarah+Chen&background=E96A2C&color=fff&bold=true" class="w-12 h-12 rounded-2xl shadow-sm" alt="User">
+                                            <img src="${currentAssignee.avatar_url}" class="w-12 h-12 rounded-2xl shadow-sm" alt="${currentAssignee.name}">
                                             <div>
-                                                <p class="font-bold text-slate-900 text-sm">Sarah Chen</p>
+                                                <p class="font-bold text-slate-900 text-sm">${currentAssignee.name}</p>
+                                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${currentAssignee.role || 'Member'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -841,6 +856,17 @@
             document.getElementById('priorityInput').value = currentTask.priority;
             document.getElementById('descInput').value = currentTask.desc || currentTask.description || '';
             
+            // Assignee dropdown
+            const assignees = await SyncService.getAssignees();
+            const aSelect = document.getElementById('assigneeSelect');
+            if (aSelect) {
+                aSelect.innerHTML = '<option value="">Unassigned</option>';
+                assignees.forEach(a => {
+                    aSelect.innerHTML += `<option value="${a.id}">${a.name}</option>`;
+                });
+                aSelect.value = currentTask.assignee_id || '';
+            }
+            
             editAttachments = [...(currentTask.attachments || [])];
             renderModalAttachments();
 
@@ -858,6 +884,7 @@
                 project: document.getElementById('projSelect').value,
                 priority: document.getElementById('priorityInput').value,
                 desc: document.getElementById('descInput').value,
+                assignee_id: document.getElementById('assigneeSelect').value || null,
                 attachments: editAttachments
             };
 
