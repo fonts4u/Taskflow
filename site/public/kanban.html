@@ -159,7 +159,7 @@
             background: rgba(233, 106, 44, 0.08) !important;
             border: 2px dashed #E96A2C !important;
             box-shadow: inset 0 0 40px rgba(233, 106, 44, 0.05);
-            transition: all 0.2s ease;
+            transition: none; /* Avoid transforms during drag for better accuracy */
         }
 
         .dropdown-inner {
@@ -762,33 +762,52 @@
         function allowDrop(ev) { 
             ev.preventDefault(); 
             ev.dataTransfer.dropEffect = 'move';
+            
+            // Add highlight class on dragover for more responsive feedback
+            const col = ev.target.closest('.column-bg');
+            if (col) {
+                if (!col.classList.contains('column-drag-over')) {
+                    document.querySelectorAll('.column-bg').forEach(c => c.classList.remove('column-drag-over'));
+                    col.classList.add('column-drag-over');
+                }
+            }
         }
 
-        let dragCounter = 0;
         function dragEnter(ev) {
             ev.preventDefault();
-            dragCounter++;
-            const col = ev.target.closest('.column-bg');
-            if (col) col.classList.add('column-drag-over');
         }
 
         function dragLeave(ev) {
-            dragCounter--;
-            if (dragCounter === 0) {
-                const col = ev.target.closest('.column-bg');
-                if (col) col.classList.remove('column-drag-over');
+            // Only remove if we're not moving to a child or another part of the same column
+            const col = ev.target.closest('.column-bg');
+            if (col && !col.contains(ev.relatedTarget)) {
+                // We'll let dragover handle re-adding it, but clear it when leaving columns entirely
+                if (!ev.relatedTarget || !ev.relatedTarget.closest('.column-bg')) {
+                    col.classList.remove('column-drag-over');
+                }
             }
         }
 
         function drag(ev) { 
             const card = ev.target.closest('.task-card');
             if (card) {
-                // Use a specific data type to avoid picking up random links/URLs
-                ev.dataTransfer.setData("taskflow/id", card.id); 
-                ev.dataTransfer.setData("text/plain", card.id); 
+                // Robust ID capture
+                const id = card.getAttribute('id');
+                ev.dataTransfer.setData("taskflow/id", id); 
+                ev.dataTransfer.setData("text/plain", id); 
                 ev.dataTransfer.effectAllowed = 'move';
                 
-                // Visual feedback for original card
+                // Set a custom drag image if possible to make it cleaner
+                try {
+                    const dragImage = card.cloneNode(true);
+                    dragImage.style.width = card.offsetWidth + 'px';
+                    dragImage.style.position = "absolute";
+                    dragImage.style.top = "-9999px";
+                    document.body.appendChild(dragImage);
+                    ev.dataTransfer.setDragImage(dragImage, 10, 10);
+                    setTimeout(() => document.body.removeChild(dragImage), 0);
+                } catch(e) {}
+
                 setTimeout(() => {
                     card.classList.add('opacity-30', 'scale-95');
                 }, 0);
@@ -797,24 +816,19 @@
         
         async function drop(ev) {
             ev.preventDefault();
-            dragCounter = 0;
             
-            // Get ID from our custom type first, fallback to text
             let draggedId = ev.dataTransfer.getData("taskflow/id") || ev.dataTransfer.getData("text/plain");
             const dropTarget = ev.target.closest('[data-column]');
             
-            // Cleanup visual states
             document.querySelectorAll('.column-bg').forEach(c => c.classList.remove('column-drag-over'));
             document.querySelectorAll('.task-card').forEach(c => c.classList.remove('opacity-30', 'scale-95'));
 
-            console.log('Kanban: Dropped item', draggedId, 'to column', dropTarget?.getAttribute('data-column'));
-
             if (dropTarget && draggedId) {
-                // Defend against accidental sidebar link drags
-                if (draggedId.startsWith('http')) {
-                    console.warn('Kanban: Ignored accidental link drag:', draggedId);
-                    return;
-                }
+                // Remove any URL junk if browser appended it
+                if (draggedId.includes('?')) draggedId = draggedId.split('?')[0];
+                if (draggedId.includes('/')) draggedId = draggedId.split('/').pop();
+                
+                if (!draggedId || draggedId.length < 5) return; // Ignore junk
 
                 const t = await SyncService.getTaskById(draggedId);
                 if (t) {
@@ -830,14 +844,12 @@
                     };
                     t.status = statusMap[newColumn] || 'Backlog';
                     
-                    const h3 = dropTarget.querySelector('.font-bold'); // More robust selector
+                    const h3 = dropTarget.querySelector('h3') || dropTarget.querySelector('.font-bold');
                     const columnLabel = h3 ? h3.innerText.trim() : newColumn;
 
                     await SyncService.saveTask(t);
                     await renderTasks();
                     showToast(`Task moved to ${columnLabel}`);
-                } else {
-                    console.error('Kanban: Task not found for ID', draggedId);
                 }
             }
         }
