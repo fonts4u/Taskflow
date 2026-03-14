@@ -183,6 +183,11 @@
                     <span class="material-icons-round text-[20px]">folder</span>
                     Projects
                 </a>
+                <a href="members.html"
+                    class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                    <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">people</span>
+                    Team
+                </a>
                 <a href="kanban.html"
                     class="flex items-center gap-3 px-4 py-4 rounded-2xl font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
                     <span class="material-icons-round text-[20px] opacity-40 group-hover:opacity-100">view_kanban</span>
@@ -343,6 +348,22 @@
         </div>
     </div>
 
+    <div id="membershipModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 animate-in zoom-in-95 relative">
+            <h3 class="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Project Team</h3>
+            <p id="membershipProjName" class="text-xs font-bold text-orange-500 uppercase tracking-widest mb-8"></p>
+            
+            <div id="membersChecklist" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar mb-8 pr-2">
+                <!-- Assignee checkboxes -->
+            </div>
+
+            <div class="flex gap-4 pt-4">
+                <button onclick="closeMembershipModal()" class="flex-1 px-6 py-4 font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-xs">Close</button>
+                <button onclick="saveMembership()" class="flex-1 px-6 py-4 font-bold text-white bg-[#E96A2C] rounded-xl shadow-xl shadow-orange-500/20 uppercase tracking-widest text-xs">Save Team</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toastContainer" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3"></div>
 
 
@@ -446,9 +467,40 @@
                                 <div class="progress-bar"><div class="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(0,0,0,0.1)]" style="width: ${p.progress || 0}%; background-color: ${accentColor};"></div></div>
                             </div>
                         </div>
+                        <div class="flex items-center justify-between mt-8 pt-6 border-t border-slate-50">
+                            <div class="flex -space-x-3 overflow-hidden" id="pm-list-${p.id}">
+                                <!-- Loading... -->
+                            </div>
+                            <button onclick="openMembershipModal('${p.id}', '${p.name}')" class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 hover:text-orange-500 hover:bg-orange-50 transition-all flex items-center justify-center border border-slate-100" title="Manage Team">
+                                <span class="material-icons-round text-lg">person_add</span>
+                            </button>
+                        </div>
                     </div>
                 `;
                 addButton.insertAdjacentElement('beforebegin', card);
+                renderProjectMemberAvatars(p.id);
+            });
+        }
+
+        async function renderProjectMemberAvatars(projectId) {
+            const memberIds = await SyncService.getProjectMembers(projectId);
+            const allAssignees = await SyncService.getAssignees();
+            const container = document.getElementById(`pm-list-${projectId}`);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const members = allAssignees.filter(a => memberIds.includes(a.id));
+            if (members.length === 0) {
+                container.innerHTML = `<span class="text-[8px] font-bold text-slate-300 uppercase tracking-widest leading-10">Solo Project</span>`;
+                return;
+            }
+
+            members.forEach(m => {
+                const img = document.createElement('img');
+                img.src = m.avatar_url;
+                img.className = 'w-10 h-10 rounded-2xl ring-4 ring-white shadow-sm object-cover';
+                img.title = m.name;
+                container.appendChild(img);
             });
         }
 
@@ -517,6 +569,56 @@
                 await renderProjects();
                 showToast(p.status === 'Archived' ? 'Project archived' : 'Project reactivated');
             }
+        }
+
+        let currentMembershipProjectId = null;
+
+        async function openMembershipModal(id, name) {
+            currentMembershipProjectId = id;
+            document.getElementById('membershipProjName').innerText = name;
+            const allAssignees = await SyncService.getAssignees();
+            const currentMembers = await SyncService.getProjectMembers(id);
+            
+            const container = document.getElementById('membersChecklist');
+            container.innerHTML = '';
+            
+            allAssignees.forEach(a => {
+                const isChecked = currentMembers.includes(a.id);
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-orange-50/50 transition-all cursor-pointer group mb-2';
+                el.onclick = () => {
+                    const cb = el.querySelector('input');
+                    cb.checked = !cb.checked;
+                };
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${a.avatar_url}" class="w-10 h-10 rounded-xl shadow-sm object-cover">
+                        <div>
+                            <p class="text-sm font-bold text-slate-900">${a.name}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${a.role || 'Member'}</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" value="${a.id}" ${isChecked ? 'checked' : ''} class="w-5 h-5 rounded-lg border-slate-200 text-orange-500 focus:ring-orange-500 transition-all" onclick="event.stopPropagation()">
+                `;
+                container.appendChild(el);
+            });
+            
+            document.getElementById('membershipModal').classList.remove('hidden');
+        }
+
+        function closeMembershipModal() {
+            document.getElementById('membershipModal').classList.add('hidden');
+        }
+
+        async function saveMembership() {
+            const container = document.getElementById('membersChecklist');
+            const selectedIds = Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+            
+            showToast('Syncing team...');
+            await SyncService.updateProjectMembers(currentMembershipProjectId, selectedIds);
+            showToast('Project team updated successfully');
+            closeMembershipModal();
+            renderProjects();
         }
     </script>
 </body>

@@ -247,6 +247,7 @@ const SyncService = {
                         ...t,
                         desc: t.description,
                         column: t.column_id,
+                        assignee_id: t.assignee_id,
                         estimated_time: t.estimated_time || '0h 0m',
                         time_consumed: t.time_consumed || 0,
                         attachments: t.attachments || [],
@@ -323,6 +324,7 @@ const SyncService = {
                     priority: task.priority || 'Medium',
                     project: task.project,
                     project_id: projectId,
+                    assignee_id: task.assignee_id,
                     column_id: task.column || 'backlog',
                     status: task.status || 'Backlog',
                     due: task.due || task.due_date,
@@ -455,6 +457,92 @@ const SyncService = {
         const filtered = events.filter(e => e.id !== eventId);
         localStorage.setItem('tf_events', JSON.stringify(filtered));
         console.log('SyncService: Local storage events updated (deleted)');
+    },
+
+    // --- ASSIGNEES (TEAM MEMBERS) ---
+    async getAssignees() {
+        await this.ensureInit();
+        let dbAssignees = [];
+        if (window.supabase && this.currentUser) {
+            try {
+                const { data, error } = await window.supabase
+                    .from('assignees')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id);
+                if (!error && data) dbAssignees = data;
+            } catch (e) {
+                console.error('SyncService: Error fetching assignees:', e);
+            }
+        }
+
+        const local = localStorage.getItem('tf_assignees');
+        const localAssignees = local ? JSON.parse(local) : [];
+        
+        if (dbAssignees.length > 0) return dbAssignees;
+        if (localAssignees.length > 0) return localAssignees;
+
+        // Default assignees
+        return [
+            { id: 'asm-1', name: 'Sarah Miller', role: 'Design Lead', avatar_url: 'https://ui-avatars.com/api/?name=Sarah+Miller&background=rose&color=fff' },
+            { id: 'asm-2', name: 'James Chen', role: 'Fullstack Dev', avatar_url: 'https://ui-avatars.com/api/?name=James+Chen&background=teal&color=fff' }
+        ];
+    },
+
+    async saveAssignee(assignee) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            await window.supabase
+                .from('assignees')
+                .upsert({
+                    ...assignee,
+                    user_id: this.currentUser.id
+                });
+        }
+        const assignees = await this.getAssignees();
+        const index = assignees.findIndex(a => a.id === assignee.id);
+        if (index > -1) assignees[index] = assignee;
+        else assignees.push(assignee);
+        localStorage.setItem('tf_assignees', JSON.stringify(assignees));
+    },
+
+    async deleteAssignee(id) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            await window.supabase.from('assignees').delete().eq('id', id);
+        }
+        const assignees = await this.getAssignees();
+        const filtered = assignees.filter(a => a.id !== id);
+        localStorage.setItem('tf_assignees', JSON.stringify(filtered));
+    },
+
+    async getProjectMembers(projectId) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            const { data } = await window.supabase
+                .from('project_members')
+                .select('assignee_id')
+                .eq('project_id', projectId);
+            return data ? data.map(d => d.assignee_id) : [];
+        }
+        const local = localStorage.getItem(`tf_pm_${projectId}`);
+        return local ? JSON.parse(local) : [];
+    },
+
+    async updateProjectMembers(projectId, assigneeIds) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            // Transactional update would be better but simple clear/insert works for now
+            await window.supabase.from('project_members').delete().eq('project_id', projectId);
+            const members = assigneeIds.map(aid => ({
+                project_id: projectId,
+                assignee_id: aid,
+                user_id: this.currentUser.id
+            }));
+            if (members.length > 0) {
+                await window.supabase.from('project_members').insert(members);
+            }
+        }
+        localStorage.setItem(`tf_pm_${projectId}`, JSON.stringify(assigneeIds));
     },
 
     // --- PROFILES ---
