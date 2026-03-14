@@ -17,7 +17,7 @@ function KanbanContent() {
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState(projectIdParam || 'All');
     const [showModal, setShowModal] = useState(false);
-    const [newTask, setNewTask] = useState({ title: '', project: '', priority: 'Medium', desc: '' });
+    const [newTask, setNewTask] = useState({ title: '', project: '', priority: 'Medium', desc: '', due: '' });
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -121,6 +121,7 @@ function KanbanContent() {
             attachments,
             column_id: 'backlog',
             status: 'Backlog',
+            due: newTask.due,
             user_id: user?.id
         };
 
@@ -131,7 +132,7 @@ function KanbanContent() {
         } else {
             setTasks(prev => [...prev, task]);
             setShowModal(false);
-            setNewTask({ title: '', project: '', priority: 'Medium', desc: '' });
+            setNewTask({ title: '', project: '', priority: 'Medium', desc: '', due: '' });
             setSelectedFiles([]);
         }
         setIsUploading(false);
@@ -245,7 +246,7 @@ function KanbanContent() {
                             </div>
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Priority</label>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Priority</label>
                                     <select
                                         value={newTask.priority}
                                         onChange={e => setNewTask({ ...newTask, priority: e.target.value })}
@@ -257,15 +258,25 @@ function KanbanContent() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Quick Note</label>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Due Date</label>
                                     <input
-                                        type="text"
-                                        value={newTask.desc}
-                                        onChange={e => setNewTask({ ...newTask, desc: e.target.value })}
-                                        placeholder="Optional..."
-                                        className="w-full px-5 py-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all text-sm"
+                                        type="date"
+                                        value={newTask.due}
+                                        onChange={e => setNewTask({ ...newTask, due: e.target.value })}
+                                        className="w-full px-5 py-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all font-bold text-sm"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Quick Note</label>
+                                <input
+                                    type="text"
+                                    value={newTask.desc}
+                                    onChange={e => setNewTask({ ...newTask, desc: e.target.value })}
+                                    placeholder="Optional details or context..."
+                                    className="w-full px-5 py-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all text-sm"
+                                />
                             </div>
 
                             <div>

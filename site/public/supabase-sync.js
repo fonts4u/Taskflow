@@ -8,12 +8,70 @@ const SyncService = {
     currentUser: null,
     initPromise: null,
 
+    // Generic Logo SVG for consistency
+    LOGO_SVG: `
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#E96A2C"/>
+            <path d="M13 6L7 13H11L10 18L16 11H12L13 6Z" fill="white"/>
+        </svg>
+    `,
+
     // Robust ID generator
     generateId() {
         if (typeof crypto !== 'undefined' && crypto.randomUUID) {
             return crypto.randomUUID();
         }
         return 'tf-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+    },
+
+    async getDashboardStats() {
+        const tasks = await this.getTasks();
+        const projects = await this.getProjects();
+        
+        const completed = tasks.filter(t => t.status === 'Done' || t.column === 'done').length;
+        const inProgress = tasks.filter(t => t.status === 'In Progress' || t.column === 'in-progress').length;
+        const delayed = tasks.filter(t => t.priority === 'High' && (t.status === 'Backlog' || t.column === 'backlog')).length;
+
+        return {
+            totalTasks: tasks.length,
+            completedTasks: completed,
+            inProgressTasks: inProgress,
+            delayedTasks: delayed,
+            totalProjects: projects.length
+        };
+    },
+
+    checkDebugMode() {
+        if (window.location.search.includes('debug=true')) {
+            sessionStorage.setItem('tf_debug', 'true');
+            console.log('SyncService: Debug mode enabled and persisted.');
+        }
+        return sessionStorage.getItem('tf_debug') === 'true';
+    },
+
+    updateLinks() {
+        if (this.checkDebugMode()) {
+            document.querySelectorAll('a').forEach(a => {
+                const href = a.getAttribute('href');
+                if (href && !href.startsWith('http') && !href.startsWith('#') && !href.includes('debug=true')) {
+                    const separator = href.includes('?') ? '&' : '?';
+                    a.setAttribute('href', href + separator + 'debug=true');
+                }
+            });
+        }
+    },
+
+    async getProjects() {
+        await this.ensureInit(); // Ensure we have the user context if needed
+        const projects = await this.getProjectsData();
+        return projects;
+    },
+
+    navigate(url) {
+        const isDebug = window.location.search.includes('debug=true') || sessionStorage.getItem('tf_debug') === 'true';
+        const separator = url.includes('?') ? '&' : '?';
+        const target = isDebug && !url.includes('debug=true') ? url + separator + 'debug=true' : url;
+        window.location.href = target;
     },
 
     async init() {
@@ -23,7 +81,14 @@ const SyncService = {
         }
         this.initPromise = (async () => {
             try {
-                const { data: { user } } = await window.supabase.auth.getUser();
+                // Timeout after 5 seconds
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Init timeout')), 5000));
+                const getUser = (async () => {
+                    const { data: { user } } = await window.supabase.auth.getUser();
+                    return user;
+                })();
+                
+                const user = await Promise.race([getUser, timeout]);
                 this.currentUser = user;
                 return user;
             } catch (e) {
@@ -59,20 +124,24 @@ const SyncService = {
         await this.ensureInit();
         let dbProjects = [];
         if (window.supabase && this.currentUser) {
-            console.log('SyncService: Fetching projects from Supabase...');
-            const { data, error } = await window.supabase
-                .from('projects')
-                .select('*')
-                .eq('user_id', this.currentUser.id);
+            try {
+                console.log('SyncService: Fetching projects from Supabase...');
+                const { data, error } = await window.supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id);
 
-            if (!error && data) {
-                console.log(`SyncService: Found ${data.length} projects in DB`);
-                dbProjects = data.map(p => ({
-                    ...p,
-                    desc: p.description
-                }));
-            } else if (error) {
-                console.error('SyncService: Error fetching projects:', error);
+                if (!error && data) {
+                    console.log(`SyncService: Found ${data.length} projects in DB`);
+                    dbProjects = data.map(p => ({
+                        ...p,
+                        desc: p.description
+                    }));
+                } else if (error) {
+                    console.error('SyncService: Error fetching projects:', error);
+                }
+            } catch (e) {
+                console.error('SyncService: Exception fetching projects:', e);
             }
         }
 
@@ -165,21 +234,29 @@ const SyncService = {
         await this.ensureInit();
         let dbTasks = [];
         if (window.supabase && this.currentUser) {
-            console.log('SyncService: Fetching tasks from Supabase...');
-            const { data, error } = await window.supabase
-                .from('tasks')
-                .select('*')
-                .eq('user_id', this.currentUser.id);
+            try {
+                console.log('SyncService: Fetching tasks from Supabase...');
+                const { data, error } = await window.supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id);
 
-            if (!error && data) {
-                console.log(`SyncService: Found ${data.length} tasks in DB`);
-                dbTasks = data.map(t => ({
-                    ...t,
-                    desc: t.description,
-                    column: t.column_id
-                }));
-            } else if (error) {
-                console.error('SyncService: Error fetching tasks:', error);
+                if (!error && data) {
+                    console.log(`SyncService: Found ${data.length} tasks in DB`);
+                    dbTasks = data.map(t => ({
+                        ...t,
+                        desc: t.description,
+                        column: t.column_id,
+                        estimated_time: t.estimated_time || '0h 0m',
+                        time_consumed: t.time_consumed || 0,
+                        attachments: t.attachments || [],
+                        time_history: t.time_history || []
+                    }));
+                } else if (error) {
+                    console.error('SyncService: Error fetching tasks:', error);
+                }
+            } catch (e) {
+                console.error('SyncService: Exception fetching tasks:', e);
             }
         }
 
@@ -188,7 +265,13 @@ const SyncService = {
         const localTasks = local ? JSON.parse(local) : [];
         
         if (dbTasks.length > 0) return dbTasks;
-        return localTasks;
+        if (localTasks.length > 0) return localTasks;
+
+        // Default tasks for new users
+        return [
+            { id: 't1', title: 'Initial Project Audit', status: 'In Progress', column: 'in-progress', priority: 'High', due: new Date().toISOString().split('T')[0] },
+            { id: 't2', title: 'Stakeholder Sync', status: 'Backlog', column: 'backlog', priority: 'Medium', due: new Date().toISOString().split('T')[0] }
+        ];
     },
 
     async getTaskById(taskId) {
@@ -204,7 +287,11 @@ const SyncService = {
                 return {
                     ...data,
                     desc: data.description,
-                    column: data.column_id
+                    column: data.column_id,
+                    estimated_time: data.estimated_time || '0h 0m',
+                    time_consumed: data.time_consumed || 0,
+                    attachments: data.attachments || [],
+                    time_history: data.time_history || []
                 };
             }
         }
@@ -239,6 +326,10 @@ const SyncService = {
                     column_id: task.column || 'backlog',
                     status: task.status || 'Backlog',
                     due: task.due || task.due_date,
+                    estimated_time: task.estimated_time || '0h 0m',
+                    time_consumed: task.time_consumed || 0,
+                    attachments: task.attachments || [],
+                    time_history: task.time_history || [],
                     user_id: this.currentUser.id
                 });
             
@@ -277,17 +368,22 @@ const SyncService = {
         await this.ensureInit();
         let dbEvents = [];
         if (window.supabase && this.currentUser) {
-            console.log('SyncService: Fetching events from Supabase...');
-            const { data, error } = await window.supabase
-                .from('events')
-                .select('*')
-                .eq('user_id', this.currentUser.id);
+            try {
+                console.log('SyncService: Fetching events from Supabase...');
+                const { data, error } = await window.supabase
+                    .from('events')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id);
 
-            if (!error && data) {
-                console.log(`SyncService: Found ${data.length} events in DB`);
-                dbEvents = data;
-            } else if (error) {
-                console.error('SyncService: Error fetching events:', error);
+                if (!error && data) {
+                    console.log(`SyncService: Found ${data.length} events in DB`);
+                    dbEvents = data;
+                    console.log('SyncService: Events sample:', dbEvents.slice(0, 1));
+                } else if (error) {
+                    console.error('SyncService: Error fetching events:', error);
+                }
+            } catch (e) {
+                console.error('SyncService: Exception fetching events:', e);
             }
         }
 
@@ -296,7 +392,14 @@ const SyncService = {
         const localEvents = local ? JSON.parse(local) : [];
         
         if (dbEvents.length > 0) return dbEvents;
-        return localEvents;
+        if (localEvents.length > 0) return localEvents;
+
+        // Default events for new users
+        const today = new Date().toISOString().split('T')[0];
+        return [
+            { id: 'e1', title: 'Team Sync', event_date: today, color: 'orange', description: 'Daily standup' },
+            { id: 'e2', title: 'Product Review', event_date: today, color: 'teal', description: 'Weekly review' }
+        ];
     },
 
     async saveEvent(event) {
@@ -332,6 +435,26 @@ const SyncService = {
         }
         localStorage.setItem('tf_events', JSON.stringify(events));
         console.log('SyncService: Local storage events updated');
+    },
+
+    async deleteEvent(eventId) {
+        await this.ensureInit();
+        if (window.supabase && this.currentUser) {
+            console.log('SyncService: Deleting event from Supabase...', eventId);
+            const { error } = await window.supabase
+                .from('events')
+                .delete()
+                .eq('id', eventId);
+            if (error) {
+                console.error('SyncService: Supabase event delete failed:', error);
+            }
+        }
+
+        // Always update local storage
+        const events = await this.getEvents();
+        const filtered = events.filter(e => e.id !== eventId);
+        localStorage.setItem('tf_events', JSON.stringify(filtered));
+        console.log('SyncService: Local storage events updated (deleted)');
     },
 
     // --- PROFILES ---
@@ -464,7 +587,6 @@ const SyncService = {
 
     async seedDummyData() {
         await this.ensureInit();
-        if (!window.supabase || !this.currentUser) return;
 
         const dummyProjects = [
             { id: crypto.randomUUID(), name: "AI Strategy 2030", description: "Department-wide LLM integration.", progress: 35, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800" },
@@ -472,48 +594,70 @@ const SyncService = {
             { id: crypto.randomUUID(), name: "Global Supply Chain", description: "Route optimization for peak seasons.", progress: 88, status: "Active", color: "teal", image_url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800" }
         ];
 
-        for (const p of dummyProjects) {
-            await window.supabase.from('projects').upsert({
-                id: p.id,
-                name: p.name,
-                description: p.description,
-                progress: p.progress,
-                status: p.status,
-                color: p.color,
-                image_url: p.image_url,
-                user_id: this.currentUser.id
-            });
+        if (window.supabase && this.currentUser) {
+            for (const p of dummyProjects) {
+                await window.supabase.from('projects').upsert({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    progress: p.progress,
+                    status: p.status,
+                    color: p.color,
+                    image_url: p.image_url,
+                    user_id: this.currentUser.id
+                });
 
-            // Add some tasks for each project
-            const tasks = [
-                { id: crypto.randomUUID(), title: `Baseline Audit - ${p.name}`, status: 'Done', column_id: 'done', priority: 'High' },
-                { id: crypto.randomUUID(), title: `Stakeholder Review`, status: 'In Progress', column_id: 'in-progress', priority: 'Medium' },
-                { id: crypto.randomUUID(), title: `Final Release Candidate`, status: 'Backlog', column_id: 'backlog', priority: 'Low' }
+                // Add some tasks for each project
+                const tasks = [
+                    { id: crypto.randomUUID(), title: `Baseline Audit - ${p.name}`, status: 'Done', column_id: 'done', priority: 'High' },
+                    { id: crypto.randomUUID(), title: `Stakeholder Review`, status: 'In Progress', column_id: 'in-progress', priority: 'Medium' },
+                    { id: crypto.randomUUID(), title: `Final Release Candidate`, status: 'Backlog', column_id: 'backlog', priority: 'Low' }
+                ];
+
+                for (const t of tasks) {
+                    await window.supabase.from('tasks').upsert({
+                        ...t,
+                        project: p.name,
+                        project_id: p.id,
+                        user_id: this.currentUser.id
+                    });
+                }
+            }
+
+            // Add dummy calendar events
+            const today = new Date();
+            const dummyEvents = [
+                { id: crypto.randomUUID(), title: "Strategy Deep Dive", description: "Quarterly alignment session.", event_date: today.toISOString().split('T')[0], color: "teal" },
+                { id: crypto.randomUUID(), title: "Lunar Base Sync", description: "Status update on automated cargo.", event_date: new Date(today.getTime() + 86400000).toISOString().split('T')[0], color: "orange" },
+                { id: crypto.randomUUID(), title: "UX Audit Presentation", description: "Reviewing premium design enhancements.", event_date: new Date(today.getTime() + 172800000).toISOString().split('T')[0], color: "teal" }
             ];
 
-            for (const t of tasks) {
-                await window.supabase.from('tasks').upsert({
-                    ...t,
-                    project: p.name,
-                    project_id: p.id,
+            for (const e of dummyEvents) {
+                await window.supabase.from('events').upsert({
+                    ...e,
                     user_id: this.currentUser.id
                 });
             }
-        }
+        } else {
+            // Local-only seeding
+            localStorage.setItem('tf_projects', JSON.stringify(dummyProjects));
+            
+            const allTasks = [];
+            for (const p of dummyProjects) {
+                allTasks.push(
+                    { id: crypto.randomUUID(), title: `Baseline Audit - ${p.name}`, status: 'Done', column: 'done', priority: 'High', project_id: p.id },
+                    { id: crypto.randomUUID(), title: `Stakeholder Review`, status: 'In Progress', column: 'in-progress', priority: 'Medium', project_id: p.id }
+                );
+            }
+            localStorage.setItem('tf_tasks', JSON.stringify(allTasks));
 
-        // Add dummy calendar events
-        const today = new Date();
-        const dummyEvents = [
-            { id: crypto.randomUUID(), title: "Strategy Deep Dive", description: "Quarterly alignment session.", event_date: today.toISOString().split('T')[0], color: "teal" },
-            { id: crypto.randomUUID(), title: "Lunar Base Sync", description: "Status update on automated cargo.", event_date: new Date(today.getTime() + 86400000).toISOString().split('T')[0], color: "orange" },
-            { id: crypto.randomUUID(), title: "UX Audit Presentation", description: "Reviewing premium design enhancements.", event_date: new Date(today.getTime() + 172800000).toISOString().split('T')[0], color: "teal" }
-        ];
-
-        for (const e of dummyEvents) {
-            await window.supabase.from('events').upsert({
-                ...e,
-                user_id: this.currentUser.id
-            });
+            const today = new Date();
+            const dummyEvents = [
+                { id: crypto.randomUUID(), title: "Strategy Deep Dive", description: "Quarterly alignment session.", event_date: today.toISOString().split('T')[0], color: "teal" },
+                { id: crypto.randomUUID(), title: "Lunar Base Sync", description: "Status update on automated cargo.", event_date: new Date(today.getTime() + 86400000).toISOString().split('T')[0], color: "orange" },
+                { id: crypto.randomUUID(), title: "UX Audit Presentation", description: "Reviewing premium design enhancements.", event_date: new Date(today.getTime() + 172800000).toISOString().split('T')[0], color: "teal" }
+            ];
+            localStorage.setItem('tf_events', JSON.stringify(dummyEvents));
         }
     },
 

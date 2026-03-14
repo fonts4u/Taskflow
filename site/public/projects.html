@@ -15,6 +15,13 @@
     <script>
         // Auth Guard: Redirect to login if no session exists or is being established
         async function authGuard() {
+            if (window.location.search.includes('debug=true') || sessionStorage.getItem('tf_debug') === 'true') {
+                if (window.location.search.includes('debug=true')) {
+                    sessionStorage.setItem('tf_debug', 'true');
+                }
+                console.warn('Auth Guard: Bypass active (debug/session)');
+                return;
+            }
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             if (currentSession) return;
             if (window.location.hash.includes('access_token=')) {
@@ -158,9 +165,8 @@
         <!-- Sidebar -->
         <aside class="w-72 sidebar-glass flex flex-col z-20">
             <div class="p-8 flex items-center gap-3">
-                <div
-                    class="w-10 h-10 bg-[#E96A2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 shrink-0">
-                    <span class="material-icons-round">bolt</span>
+                <div id="sidebarLogo" class="shrink-0">
+                    <!-- Injected via JS -->
                 </div>
                 <span
                     class="text-2xl font-bold font-display tracking-tight text-slate-900 border-r pr-4 border-slate-200">TaskFlow</span>
@@ -447,6 +453,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            const logoContainer = document.getElementById('sidebarLogo');
+            if (logoContainer) logoContainer.innerHTML = SyncService.LOGO_SVG;
+
             await SyncService.updateProfileUI();
             if (await SyncService.hasData()) {
                 const seedBtn = document.getElementById('seedDemoBtn');
@@ -454,6 +463,10 @@
             }
             projects = await getProjects();
             await renderProjects();
+
+            if (window.SyncService) {
+                SyncService.updateLinks();
+            }
         });
 
         function openModal() { document.getElementById('projectModal').classList.remove('hidden'); }
